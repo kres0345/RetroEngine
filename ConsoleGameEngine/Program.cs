@@ -324,65 +324,6 @@ namespace RetroEngine
             GameStartedTimestamp = Utility.TimeStamp();
             previousFrameTimestamp = Utility.TimeStamp();
 
-            #region Timer
-            /*
-            updateTimer = new Timer((e) =>
-            {
-                // Internal Update loop
-                long currentTimestamp = TimeStamp();
-                float delta = (float)currentTimestamp - (float)previousFrameTimestamp;
-
-                try { Time.deltaTime = delta / 1000; }
-                catch (DivideByZeroException) { Time.deltaTime = 0; }
-
-                previousFrameTimestamp = TimeStamp();
-
-
-                if (Settings.FPSCounter)
-                {
-                    float FPS;
-                    float timepassed;
-                    try
-                    {
-                        timepassed = (float)(TimeStamp() - gameStartedTimestamp) / (float)1000;
-                        FPS = TotalFrames / timepassed;
-                    }
-                    catch (DivideByZeroException)
-                    {
-                        FPS = 0;
-                        timepassed = 0;
-                    }
-
-                    Console.Title = $"FPS: {FPS}, time: {timepassed}";
-                }
-
-
-                Console.Clear();
-
-
-                if (Debug.ShowCoordinateSystem)
-                {
-                    Debug.DrawCoordinateSystem();
-                }
-
-                // Draw gameobjects
-                foreach (GameObject obj in Utility.SortGameObjects(Utility.GetGameObjects()))
-                {
-                    
-                    DrawGameObject(obj);
-                }
-
-                // External update loop
-                if (UpdateMethod != null)
-                {
-                    UpdateMethod.Invoke();
-                }
-
-                TotalFrames++;
-            }, null, 0, (int)(1000 / TargetFramesPerSecond));
-            */
-            #endregion
-
             gamePlaying = true;
 
             // Prevents window from closing
@@ -582,14 +523,13 @@ namespace RetroEngine
         public Transform transform { get; set; } = new Transform();
         public Events events { get; } = new Events();
         public bool[][] collision { get; set; }
-        public string name { get; set; }
+        public string name { get; set; } = "gameobject";
         public int? identifier { get; private set; } = null;
-        public static Vector2 vector2 = new Vector2();
         public bool activeSelf { get; private set; } = true;
 
         public GameObject()
         {
-            this.name = $"gameobject";
+
         }
         public GameObject(ASCIISprite sprite)
         {
@@ -599,6 +539,19 @@ namespace RetroEngine
         {
             this.transform = transform;
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="gameObject"></param>
+        public GameObject(GameObject gameObject)
+        {
+            this.sprite = gameObject.sprite;
+            this.transform = gameObject.transform;
+            this.events = gameObject.events;
+            this.collision = gameObject.collision;
+            this.name = gameObject.name;
+            this.activeSelf = gameObject.activeSelf;
+        }
 
         /// <summary>
         /// Gets the instantiated GameObject.
@@ -606,13 +559,27 @@ namespace RetroEngine
         /// <returns>Already instantiated GameObject</returns>
         public GameObject Get()
         {
-            if (identifier == null || identifier <= -1)
+            if (identifier == null || (int)identifier <= -1)
             {
                 return null;
             }
 
+            if (identifier > Game.Objects.Count - 1)
+            {
+                throw new Exceptions.GameObjectNotInstantiatedException();
+            }
+
+            //System.Diagnostics.Debug.WriteLine("ID: " + identifier);
+            //System.Diagnostics.Debug.WriteLine("Objects: " + Game.Objects);
+
             return Game.Objects[(int)identifier];
         }
+        
+        /// <summary>
+        /// Returns clone of current object.
+        /// </summary>
+        /// <returns>Cloned GameObject</returns>
+        public GameObject Clone() => new GameObject(this);
 
         /// <summary>
         /// Replaces the instantiated GameObject with this.
@@ -677,22 +644,22 @@ namespace RetroEngine
         /// <param name="obj">The GameObject to instantiate</param>
         public static GameObject Instantiate(GameObject obj)
         {
-            GameObject newobj = obj;
-
-            newobj.identifier = Game.Objects.Count;
-
-            Game.Objects.Add(newobj);
-            return newobj;
+            GameObject t = new GameObject
+            {
+                identifier = Game.Objects.Count
+            };
+            Game.Objects.Add(t);
+            return t;
         }
         public static GameObject Instantiate(GameObject obj, string name)
         {
-            GameObject newobj = obj;
-
-            newobj.identifier = Game.Objects.Count;
-            newobj.name = name;
-
-            Game.Objects.Add(newobj);
-            return newobj;
+            GameObject t = new GameObject
+            {
+                identifier = Game.Objects.Count,
+                name = name
+            };
+            Game.Objects.Add(t);
+            return t;
         }
 
         /// <summary>
@@ -747,7 +714,7 @@ namespace RetroEngine
                 if (value > 0)
                     width = value;
                 else
-                    throw new HeightOrWidthLessThanOrEqualToZeroException();
+                    throw new Exceptions.HeightOrWidthLessThanOrEqualToZeroException();
             }
         }
         public int height
@@ -757,7 +724,7 @@ namespace RetroEngine
                 if (value > 0)
                     height = value;
                 else
-                    throw new HeightOrWidthLessThanOrEqualToZeroException();
+                    throw new Exceptions.HeightOrWidthLessThanOrEqualToZeroException();
             }
         }
 
@@ -811,17 +778,6 @@ namespace RetroEngine
                 }
             }
             return Collision;
-        }
-
-        public class HeightOrWidthLessThanOrEqualToZeroException : Exception
-        {
-            public HeightOrWidthLessThanOrEqualToZeroException()
-            {
-            }
-
-            public HeightOrWidthLessThanOrEqualToZeroException(string message) : base(message)
-            {
-            }
         }
     }
 
@@ -1135,9 +1091,10 @@ namespace RetroEngine
         /// <returns></returns>
         public static List<GameObject> SortGameObjects(List<GameObject> list)
         {
-            list.RemoveAll(a => !a.activeSelf);
-            list.RemoveAll(a => a == null);
-            return list.OrderBy(o => o.transform.z_index).ToList();
+            return list;
+            //list.RemoveAll(a => !a.activeSelf);
+            //list.RemoveAll(a => a == null);
+            //return list.OrderBy(o => o.transform.z_index).ToList();
         }
     }
 
@@ -1145,4 +1102,89 @@ namespace RetroEngine
     {
         TopLeft, BottomLeft, Middle, TopRight, BottomRight,
     }
+
+    public class Exceptions
+    {
+        public class GameObjectNotInstantiatedException : Exception
+        {
+            public GameObjectNotInstantiatedException()
+            {
+            }
+
+            public GameObjectNotInstantiatedException(string message) : base(message)
+            {
+            }
+        }
+
+        public class HeightOrWidthLessThanOrEqualToZeroException : Exception
+        {
+            public HeightOrWidthLessThanOrEqualToZeroException()
+            {
+            }
+
+            public HeightOrWidthLessThanOrEqualToZeroException(string message) : base(message)
+            {
+            }
+        }
+    }
 }
+
+
+#region Timer
+/*
+updateTimer = new Timer((e) =>
+{
+    // Internal Update loop
+    long currentTimestamp = TimeStamp();
+    float delta = (float)currentTimestamp - (float)previousFrameTimestamp;
+
+    try { Time.deltaTime = delta / 1000; }
+    catch (DivideByZeroException) { Time.deltaTime = 0; }
+
+    previousFrameTimestamp = TimeStamp();
+
+
+    if (Settings.FPSCounter)
+    {
+        float FPS;
+        float timepassed;
+        try
+        {
+            timepassed = (float)(TimeStamp() - gameStartedTimestamp) / (float)1000;
+            FPS = TotalFrames / timepassed;
+        }
+        catch (DivideByZeroException)
+        {
+            FPS = 0;
+            timepassed = 0;
+        }
+
+        Console.Title = $"FPS: {FPS}, time: {timepassed}";
+    }
+
+
+    Console.Clear();
+
+
+    if (Debug.ShowCoordinateSystem)
+    {
+        Debug.DrawCoordinateSystem();
+    }
+
+    // Draw gameobjects
+    foreach (GameObject obj in Utility.SortGameObjects(Utility.GetGameObjects()))
+    {
+
+        DrawGameObject(obj);
+    }
+
+    // External update loop
+    if (UpdateMethod != null)
+    {
+        UpdateMethod.Invoke();
+    }
+
+    TotalFrames++;
+}, null, 0, (int)(1000 / TargetFramesPerSecond));
+*/
+#endregion
