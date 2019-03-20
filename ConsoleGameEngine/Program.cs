@@ -52,6 +52,7 @@ namespace ConsoleGameEngineGame
             new char[] { ' ', '.', '-','\'', '`', '-', '.', '_', '_', '_', '|', '_', '_' },
             new char[] { '/', ' ', ' ', ' ', ' ','\\', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '`', '.' }
         };*/
+        /*
         static char[][] Player1 = new char[3][]
         {
             new char[] { '{', '0', '}' },
@@ -61,6 +62,16 @@ namespace ConsoleGameEngineGame
         static char[][] Bullet = new char[1][]
         {
             new char[] { '=', '=', '>' }
+        };*/
+        static char[,] Player1 = new char[3,3]
+        {
+            { '{', '0', '}' },
+            { '{', '+', '}' },
+            { '{', '0', '}' }
+        };
+        static char[,] Bullet = new char[1, 3]
+        {
+            { '=', '=', '>' }
         };
 
         static void Start()
@@ -383,7 +394,7 @@ namespace RetroEngine
             }
         }
 
-        private static void DrawCharArray(char[][] sprite, Vector2 position)
+        private static void DrawCharArray(char[,] sprite, Vector2 position)
         {
             if (sprite == null)
             {
@@ -392,11 +403,11 @@ namespace RetroEngine
             //Vector2 position = obj.transform.position;
             //char[][] sprite = obj.sprite.draw;
 
-            for (int y = 0; y < sprite.Length; y++)
+            for (int y = 0; y < sprite.GetLength(0); y++)
             {
-                for (int x = 0; x < sprite[0].Length; x++)
+                for (int x = 0; x < sprite.GetLength(1); x++)
                 {
-                    SetCell(sprite[y][x], (int)position.x + x, (int)position.y + y);
+                    SetCell(sprite[y, x], (int)position.x + x, (int)position.y + y);
                     /*
                     if (sprite[y][x] != ' ')
                     {
@@ -455,9 +466,9 @@ namespace RetroEngine
                 {
                     System.Diagnostics.Debug.Print("Object is not equal to new transform");
                     Vector2 position = objectsList[i].transform.position;
-                    for (int y = 0; y < objectsList[i].sprite.height; y++)
+                    for (int y = 0; y < objectsList[i].sprite.draw.GetLength(0); y++)
                     {
-                        for (int x = 0; x < objectsList[i].sprite.width; x++)
+                        for (int x = 0; x < objectsList[i].sprite.draw.GetLength(1); x++)
                         {
                             Gamefield[(int)position.y + y, (int)position.x + x] = ' ';
                             //SetCell(' ', (int)position.x + x, (int)position.y + y);
@@ -519,25 +530,40 @@ namespace RetroEngine
 
     class GameObject
     {
-        public ASCIISprite sprite { get; set; } = new ASCIISprite();
-        public Transform transform { get; set; } = new Transform();
-        public Events events { get; } = new Events();
+        public ASCIISprite sprite { get; set; }
+        public Transform transform { get; set; }
+        public Events events { get; }
         public bool[][] collision { get; set; }
-        public string name { get; set; } = "gameobject";
-        public int? identifier { get; private set; } = null;
-        public bool activeSelf { get; private set; } = true;
+        public string name { get; set; }
+        public int? identifier { get; private set; }
+        public bool activeSelf { get; private set; }
 
         public GameObject()
         {
-
+            sprite = new ASCIISprite();
+            transform = new Transform();
+            events = new Events();
+            name = "gameobject";
+            identifier = null;
+            activeSelf = true;
         }
         public GameObject(ASCIISprite sprite)
         {
             this.sprite = sprite;
+            transform = new Transform();
+            events = new Events();
+            name = "gameobject";
+            identifier = null;
+            activeSelf = true;
         }
         public GameObject(Transform transform)
         {
             this.transform = transform;
+            sprite = new ASCIISprite();
+            events = new Events();
+            name = "gameobject";
+            identifier = null;
+            activeSelf = true;
         }
         /// <summary>
         /// 
@@ -676,22 +702,23 @@ namespace RetroEngine
             public Func<int> OnCollisionEnter = null;
             public Func<int> OnCollisionStay = null;
             public Func<int> OnCollisionExit = null;
-
-            public Events()
-            {
-
-            }
         }
     }
 
     class Transform
     {
-        public Vector2 position { get; set; } = new Vector2();
-        public int z_index { get; set; } = 10;
+        public Vector2 position { get; set; }
+        public int z_index { get; set; }
 
         public Transform()
         {
-            
+            position = new Vector2();
+            z_index = 10;
+        }
+        public Transform(Vector2 position)
+        {
+            this.position = position;
+            z_index = 10;
         }
 
         /// <summary>
@@ -705,12 +732,20 @@ namespace RetroEngine
 
     class ASCIISprite
     {
-        public char[][] draw { get; set; }
+        public char[,] draw { get; set; }
+            /*
+            get { return draw; }
+            set
+            {
+                UpdateDimensions();
+                draw = value;
+            }*/
         public bool[][] collision { get; set; }
+        /*
         public int width
         {
             get { return width; }
-            set {
+            private set {
                 if (value > 0)
                     width = value;
                 else
@@ -720,36 +755,52 @@ namespace RetroEngine
         public int height
         {
             get { return height; }
-            set {
+            private set {
                 if (value > 0)
                     height = value;
                 else
                     throw new Exceptions.HeightOrWidthLessThanOrEqualToZeroException();
             }
-        }
+        }*/
 
         public ASCIISprite()
         {
 
-        }
+        }/*
         public ASCIISprite(int width, int height)
         {
             this.width = width;
             this.height = height;
-        }
-        public ASCIISprite(char[][] draw)
+            this.draw = new char[width, height];
+        }*/
+        public ASCIISprite(char[,] draw)
         {
             this.draw = draw;
-            this.width = draw.Length;
-            this.height = draw[0].Length;
+            //this.width = draw.Length;
+            //this.height = draw[0].Length;
         }
-        public ASCIISprite(char[][] draw, bool[][] collision)
+        public ASCIISprite(char[,] draw, bool[][] collision)
         {
             this.draw = draw;
-            this.width = draw.Length;
-            this.height = draw[0].Length;
+            //this.width = draw.Length;
+            //this.height = draw[0].Length;
             this.collision = collision;
         }
+
+        public int width() => draw.GetLength(0);
+        public int height() => draw.GetLength(1);
+
+        /*
+        private void UpdateDimensions()
+        {
+            if (this.draw == null || this.draw.GetLength(0) == 0 || draw.GetLength(1) == 0)
+            {
+                return;
+            }
+
+            this.width = this.draw.Length;
+            this.height = this.draw[0].Length;
+        }*/
 
         public static bool[][] GenerateCollision(char[][] draw)
         {
@@ -770,11 +821,11 @@ namespace RetroEngine
         public static bool[][] GenerateCollision(ASCIISprite sprite)
         {
             bool[][] Collision = new bool[sprite.draw.Length][];
-            for (int y = 0; y < sprite.draw.Length; y++)
+            for (int y = 0; y < sprite.draw.GetLength(0); y++)
             {
-                for (int x = 0; x < sprite.draw[y].Length; x++)
+                for (int x = 0; x < sprite.draw.GetLength(1); x++)
                 {
-                    Collision[y][x] = sprite.draw[y][x] != ' ';
+                    Collision[y][x] = sprite.draw[y, x] != ' ';
                 }
             }
             return Collision;
