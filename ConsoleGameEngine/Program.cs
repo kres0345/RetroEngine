@@ -149,418 +149,7 @@ namespace ConsoleGameEngineGame
 
 namespace RetroEngine
 {
-    static class Input
-    {
-        /// <summary>
-        /// Checks for key presses during each frame.
-        /// </summary>
-        public static bool ListenForKeys { get; set; } = true;
-
-        private static Dictionary<int, ConsoleKey> frameKeys = new Dictionary<int, ConsoleKey>();
-        private static Task keyListener = null;
-        //private static int lastFrame = 0;
-
-        public static bool GetKey(ConsoleKey key)
-        {
-            if (frameKeys.TryGetValue(Game.TotalFrames + 1, out ConsoleKey pressedKey))
-            {
-                return pressedKey == key;
-            }
-            else { return false; }
-        }
-
-        /// <summary>
-        /// Initiates key listening thread.
-        /// </summary>
-        public static void ListenKeys()
-        {
-            if (keyListener != null)
-            {
-                return;
-            }
-
-            keyListener = Task.Run(() =>
-            {
-                ListenForKeys = true;
-                while (ListenForKeys)
-                {
-                    ConsoleKey key = Console.ReadKey(true).Key;
-                    frameKeys[Game.TotalFrames + 1] = key;
-                    //frameKeys.Add(Game.TotalFrames + 1, Console.ReadKey(true).Key);
-                    //lastFrame = Game.TotalFrames + 1;
-                }
-            });
-        }
-    }
-
-    class Debug
-    {
-        /// <summary>
-        /// Currently affects performance massively.  For drawing coordinate system only once refer to DrawCoordinateSystem method.
-        /// </summary>
-        public static bool DrawCoordinateSystemEveryFrame { get; set; } = false;
-
-        /// <summary>
-        /// The maximum width of coordinate system, setting the value to null results in max width being equal to Game.GameSizeWidth.
-        /// </summary>
-        public static int? CoordinateWidth { get; set; } = null; //100
-        /// <summary>
-        /// The maximum height of coordinate system, setting the value to null results in max height being equal to Game.GameSizeHeight.
-        /// </summary>
-        public static int? CoordinateHeight { get; set; } = null; //30
-        /// <summary>
-        /// The interval of numbers displayed on each axis.
-        /// </summary>
-        public static int CoordinateInterval { get; set; } = 5;
-
-        /// <summary>
-        /// Log mode, <code>Spool</code> to log the output to a file, <code>DebugIDE</code> to write to special IDE debugging channel.
-        /// </summary>
-        public static logMode LogMode = logMode.DebugIDE;
-
-        private static StreamWriter fs = null;
-
-        /// <summary>
-        /// Draws coordinate system
-        /// </summary>
-        public static void DrawCoordinateSystem()
-        {
-            int Width = CoordinateWidth == null ? Game.GameSizeWidth : (int)CoordinateWidth;
-            int Height = CoordinateHeight == null ? Game.GameSizeHeight : (int)CoordinateHeight;
-
-
-            Game.SetCell('x', 0, 0);
-            for (int x = CoordinateInterval; x + CoordinateInterval < Math.Min(Width, Console.BufferWidth); x += CoordinateInterval)
-            {
-                //Utility.SetPixel('|', x, 0);
-                Game.SetCell('|', x, 1);
-                //Utility.SetPixel(x.ToString(), x, 2);
-                Game.SetCell(x.ToString().ToCharArray(), x, 3);
-            }
-
-            for (int y = CoordinateInterval; y + CoordinateInterval < Math.Min(Height, Console.BufferHeight); y += CoordinateInterval)
-            {
-                //Utility.SetPixel("--", 0, y);
-                Game.SetCell("--".ToCharArray(), 1, y);
-
-                //Utility.SetPixel(y.ToString(), 4, y);
-                Game.SetCell(y.ToString().ToCharArray(), 4, y);
-            }
-        }
-
-        /// <summary>
-        /// Logs a message to 'latest_log.txt'.
-        /// </summary>
-        public static void Log(object message)
-        {
-            switch (LogMode)
-            {
-                case logMode.Spool:
-                    write(message, logType.INFO);
-                    return;
-                case logMode.DebugIDE:
-                    System.Diagnostics.Debug.WriteLine(message);
-                    return;
-            }
-        }
-        public static void LogError(object message)
-        {
-            switch (LogMode)
-            {
-                case logMode.Spool:
-                    write(message, logType.ERROR);
-                    return;
-                case logMode.DebugIDE:
-                    System.Diagnostics.Debug.WriteLine(message);
-                    return;
-            }
-        }
-        public static void LogWarning(object message)
-        {
-            switch (LogMode)
-            {
-                case logMode.Spool:
-                    write(message, logType.WARNING);
-                    return;
-                case logMode.DebugIDE:
-                    System.Diagnostics.Debug.WriteLine(message);
-                    return;
-                default:
-                    break;
-            }
-        }
-
-        private enum logType { INFO, WARNING, ERROR, }
-        public enum logMode { Spool, DebugIDE }
-
-        private static void write(object message, logType logType)
-        {
-            if (fs == null)
-            {
-                fs = initLog();
-            }
-
-            fs.WriteLineAsync($"[{DateTime.Now.ToShortTimeString()}][{logType.ToString()}] " + message);
-        }
-
-        private static StreamWriter initLog()
-        {
-            if (File.Exists("latest_log.txt"))
-            {
-                File.Move("latest_log.txt", $"log_{File.ReadLines("latest_log.txt").First()}.txt");
-            }
-
-            StreamWriter sw = new StreamWriter("latest_log.txt");
-            sw.WriteLine(Utility.TimeStamp());
-            sw.WriteLine("\nLog initialized\n");
-            return sw;
-        }
-    }
-
-    class Game
-    {
-        /// <summary>
-        /// List of all GameObjects.
-        /// </summary>
-        /// <remarks>Objects must NOT be removed from this list, they should be nullified.</remarks>
-        public static List<GameObject> Objects { get; } = new List<GameObject>();
-        public static Action UpdateMethod { get; set; }
-        public static Action StartMethod { get; set; }
-        public static int TotalFrames { get; private set; }
-        public static int GameSizeWidth { get; set; } = 100;
-        public static int GameSizeHeight { get; set; } = 50;
-        public static long GameStartedTimestamp { get; private set; }
-
-        //private static Timer updateTimer;
-        private static bool gamePlaying;
-        //private static long previousFrameTimestamp = 0;
-        private static char[,] gamefield { get; set; } = new char[GameSizeHeight, GameSizeWidth];
-        private static char[,] gamefieldRendered { get; set; } = new char[GameSizeHeight, GameSizeWidth];
-        private static int?[,] collisionMap { get; set; } = new int?[GameSizeHeight, GameSizeWidth];
-        private static int?[,] collisionMapRendered { get; set; } = new int?[GameSizeHeight, GameSizeWidth];
-        public static Tuple<bool, List<int>>[,] collidedMap { get; set; } = new Tuple<bool, List<int>>[GameSizeHeight, GameSizeWidth];
-        private static List<GameObject> previousFrameObjects = new List<GameObject>();
-
-        public static void Exit() => gamePlaying = false;
-
-        public static void Play()
-        {
-            // Internal start
-            long currentTimestamp = Utility.TimeStamp();
-            Console.CursorVisible = false;
-            Input.ListenKeys();
-
-            // External start method
-            if (StartMethod != null)
-            {
-                StartMethod.Invoke();
-            }
-
-            // Draw gameobjects
-            foreach (GameObject obj in Utility.SortGameObjects(Objects))
-            {
-                HandleGameObject(obj);
-            }
-
-            //previousFrameObjects = Objects;
-            GameStartedTimestamp = Utility.TimeStamp();
-
-            long previousFrameTimestamp = currentTimestamp;
-            currentTimestamp = Utility.TimeStamp();
-
-            gamePlaying = true;
-
-            // Prevents window from closing
-            while (gamePlaying) {
-
-                // Internal Update loop
-                previousFrameObjects = Objects;
-                gamefield = gamefieldRendered;
-                previousFrameTimestamp = currentTimestamp;
-                currentTimestamp = Utility.TimeStamp();
-
-                float delta = currentTimestamp - previousFrameTimestamp;
-                Time.deltaTime = delta != 0 ? delta / (float)1000 : 0;
-                
-                if (Settings.FPSCounter)
-                {
-                    float FPS;
-                    float timepassed;
-                    try
-                    {
-                        timepassed = (float)(Utility.TimeStamp() - GameStartedTimestamp) / (float)1000;
-                        FPS = TotalFrames / timepassed;
-                    }
-                    catch (DivideByZeroException) { FPS = 0; timepassed = 0; }
-
-                    Console.Title = $"FPS: {FPS}, deltaTime: {Time.deltaTime}";
-                }
-
-                if (Debug.DrawCoordinateSystemEveryFrame)
-                    Debug.DrawCoordinateSystem();
-
-                // Draw gameobjects
-                //collisionMap = new int?[GameSizeHeight, GameSizeWidth];
-
-                //gamefield = new char[GameSizeHeight, GameSizeWidth];
-                //gamefieldRendered = new char[GameSizeHeight, GameSizeWidth];
-                foreach (GameObject obj in Utility.SortGameObjects(Objects))
-                {
-                    HandleGameObject(obj);
-                }
-
-                CleanBuffered();
-                UpdateBuffer();
-
-                // External update loop
-                if (UpdateMethod != null)
-                {
-                    UpdateMethod.Invoke();
-                }
-
-                TotalFrames++;
-            }
-        }
-
-        private static void HandleGameObject(GameObject obj)
-        {
-            if (!obj.activeSelf || obj.sprite.draw == null)
-            {
-                return;
-            }
-
-            //HandleCollisions(obj.sprite.collision, obj.transform.position, (int)obj.identifier);
-            PlaceCharArray(obj.sprite.draw, (int)obj.transform.position.x, (int)obj.transform.position.y); 
-        }
-
-        private static void PlaceCharArray(char[,] sprite, int x, int y)
-        {
-            if (sprite == null)
-            {
-                return;
-            }
-            //Vector2 position = obj.transform.position;
-            //char[][] sprite = obj.sprite.draw;
-
-            for (int loop_y = 0; loop_y < sprite.GetLength(0); loop_y++)
-            {
-                for (int loop_x = 0; loop_x < sprite.GetLength(1); loop_x++)
-                {
-                    SetCell(sprite[loop_y, loop_x], x + loop_x, y + loop_y);
-                    /*
-                    if (sprite[y][x] != ' ')
-                    {
-                        //Utility.SetPixel(sprite[y][x], (int)pos.x + x, (int)pos.y + y);
-                        SetCell(sprite[y][x], (int)pos.x + x, (int)pos.y + y);
-                    }*/
-                }
-            }
-        }
-
-        private static void HandleCollisions(bool[,] collision, Vector2 position, int identifier)
-        {
-            if (collision == null)
-            {
-                return;
-            }
-
-            bool collided = false;
-
-            for (int y = 0; y < collision.GetLength(0); y++)
-            {
-                for (int x = 0; x < collision.GetLength(1); x++)
-                {
-                    //TODO: Implement collision system
-                    if (collisionMap[(int)position.y + y, (int)position.x + x] == null)
-                    {
-                        collisionMap[(int)position.y + y, (int)position.x + x] = identifier;
-                    }
-                    else
-                    {
-                        collided = true;
-                    }
-                }
-            }
-
-            if (collided)
-            {
-                System.Diagnostics.Debug.WriteLine("Collided");
-                //Objects[identifier].events.OnCollisionEnter
-            }
-        }
-
-        private static void CleanBuffered()
-        {
-            //List<GameObject> objectsList = Objects;
-            for (int i = 0; i < Math.Min(previousFrameObjects.Count, objectsList.Count); i++)
-            {
-                //Debug.Log($"previus: {previousFrameObjects[i].transform.position}, now: {objectsList[i].transform.position}");
-                Debug.Log(previousFrameObjects[i].transform.position == Objects[i].transform.position);
-                if (true)
-                {
-                    Debug.Log("Object is not equal to new transform");
-                    Vector2 position = objectsList[i].transform.position;
-                    for (int y = 0; y < objectsList[i].sprite.draw.GetLength(0); y++)
-                    {
-                        for (int x = 0; x < objectsList[i].sprite.draw.GetLength(1); x++)
-                        {
-                            gamefield[(int)position.y + y, (int)position.x + x] = ' ';
-                            //SetCell(' ', (int)position.x + x, (int)position.y + y);
-                        }
-                    }
-                }
-            }
-        }
-
-        private static void UpdateBuffer()
-        {
-
-            for (int y = 0; y < GameSizeHeight; y++)
-            {
-                for (int x = 0; x < GameSizeWidth; x++)
-                {
-                    char value = gamefield[y, x];
-                    if (value != '\0')
-                    {
-                        Utility.SetPixel(value, x, y);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Set a specific cell's value.
-        /// </summary>
-        public static void SetCell(char value, int x, int y)
-        {
-            if (0 < x && x < GameSizeWidth &&
-                0 < y && y < GameSizeHeight)
-            {
-                gamefield[y, x] = gamefieldRendered[y, x] == value ? '\0' : value;
-            }
-        }
-        /// <summary>
-        /// Sets cell values by an character array, at a location.
-        /// </summary>
-        /// <param name="HorizontalText">Char array put horizontally or vertically.</param>
-        public static void SetCell(char[] values, int x, int y, bool HorizontalText = true)
-        {
-            if (HorizontalText)
-            {
-                for (int i = 0; i < values.Length; i++)
-                {
-                    SetCell(values[i], x + i, y);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < values.Length; i++)
-                {
-                    SetCell(values[i], x, y + i);
-                }
-            }
-        }
-    }
+    public enum CoordinateSystemType { TopLeft, BottomLeft, Middle, TopRight, BottomRight, }
 
     class GameObject
     {
@@ -645,7 +234,9 @@ namespace RetroEngine
         public void Update()
         {
             if (identifier == null)
+            {
                 return;
+            }
 
             Game.Objects[(int)identifier] = this;
         }
@@ -726,9 +317,9 @@ namespace RetroEngine
         
         public class Events
         {
-            public Func<int> OnCollisionEnter = null;
-            public Func<int> OnCollisionStay = null;
-            public Func<int> OnCollisionExit = null;
+            public Func<int> OnCollisionEnter;
+            public Func<int> OnCollisionStay;
+            public Func<int> OnCollisionExit;
 
             public bool TryGetOnCollisionEnter(out Func<int> OnCollisionEnter)
             {
@@ -1097,25 +688,16 @@ namespace RetroEngine
         }
     }
 
-    class Time
-    {
-        /// <summary>
-        /// Still experimenting with this...
-        /// </summary>
-        public static float deltaTime
-        {
-            get; set;
-        }
-        
-    }
-
-    class Settings
+    static class Settings
     {
         /// <summary>
         /// Defines the coordinate (0, 0) point.
         /// </summary>
         public static CoordinateSystemType CoordinateSystemCenter = CoordinateSystemType.TopLeft;
         public static bool FPSCounter = true;
+
+        public static int GameSizeWidth { get; set; } = 100;
+        public static int GameSizeHeight { get; set; } = 50;
 
         /// <summary>
         /// Makes the grid in the console equal size.
@@ -1125,11 +707,435 @@ namespace RetroEngine
         public static bool SquareMode { get; set; } = false;
     }
 
-    class Utility
+    static class Input
+    {
+        /// <summary>
+        /// Checks for key presses during each frame.
+        /// </summary>
+        public static bool ListenForKeys { get; set; } = true;
+
+        private static Dictionary<int, ConsoleKey> frameKeys = new Dictionary<int, ConsoleKey>();
+        private static Task keyListener = null;
+        //private static int lastFrame = 0;
+
+        public static bool GetKey(ConsoleKey key)
+        {
+            if (frameKeys.TryGetValue(Game.TotalFrames + 1, out ConsoleKey pressedKey))
+            {
+                return pressedKey == key;
+            }
+            else { return false; }
+        }
+
+        /// <summary>
+        /// Initiates key listening thread.
+        /// </summary>
+        public static void ListenKeys()
+        {
+            if (keyListener != null)
+            {
+                return;
+            }
+
+            keyListener = Task.Run(() =>
+            {
+                ListenForKeys = true;
+                while (ListenForKeys)
+                {
+                    ConsoleKey key = Console.ReadKey(true).Key;
+                    frameKeys[Game.TotalFrames + 1] = key;
+                    //frameKeys.Add(Game.TotalFrames + 1, Console.ReadKey(true).Key);
+                    //lastFrame = Game.TotalFrames + 1;
+                }
+            });
+        }
+    }
+
+    static class Game
+    {
+        /// <summary>
+        /// List of all GameObjects.
+        /// </summary>
+        /// <remarks>Objects must NOT be removed from this list, they should be nullified.</remarks>
+        public static List<GameObject> Objects { get; } = new List<GameObject>();
+        public static Action UpdateMethod { get; set; }
+        public static Action StartMethod { get; set; }
+        public static int TotalFrames { get; private set; }
+        public static long GameStartedTimestamp { get; private set; }
+
+        //private static Timer updateTimer;
+        private static bool gamePlaying;
+        //private static long previousFrameTimestamp = 0;
+        private static char[,] gamefield { get; set; } = new char[Settings.GameSizeHeight, Settings.GameSizeWidth];
+        private static char[,] gamefieldRendered { get; set; } = new char[Settings.GameSizeHeight, Settings.GameSizeWidth];
+        private static int?[,] collisionMap { get; set; } = new int?[Settings.GameSizeHeight, Settings.GameSizeWidth];
+        private static int?[,] collisionMapRendered { get; set; } = new int?[Settings.GameSizeHeight, Settings.GameSizeWidth];
+        public static Tuple<bool, List<int>>[,] collidedMap { get; set; } = new Tuple<bool, List<int>>[Settings.GameSizeHeight, Settings.GameSizeWidth];
+        private static List<GameObject> previousFrameObjects = new List<GameObject>();
+
+        public static void Exit() => gamePlaying = false;
+
+        public static void Play()
+        {
+            // Internal start
+            long currentTimestamp = Utility.TimeStamp();
+            Console.CursorVisible = false;
+            Input.ListenKeys();
+
+            // External start method
+            if (StartMethod != null)
+            {
+                StartMethod.Invoke();
+            }
+
+            // Draw gameobjects
+            foreach (GameObject obj in Utility.SortGameObjects(Objects))
+            {
+                HandleGameObject(obj);
+            }
+
+            //previousFrameObjects = Objects;
+            GameStartedTimestamp = Utility.TimeStamp();
+
+            long previousFrameTimestamp = currentTimestamp;
+            currentTimestamp = Utility.TimeStamp();
+
+            gamePlaying = true;
+
+            // Prevents window from closing
+            while (gamePlaying)
+            {
+
+                // Internal Update loop
+                previousFrameObjects = Objects;
+                gamefield = gamefieldRendered;
+                previousFrameTimestamp = currentTimestamp;
+                currentTimestamp = Utility.TimeStamp();
+
+                float delta = currentTimestamp - previousFrameTimestamp;
+                Time.deltaTime = delta != 0 ? delta / (float)1000 : 0;
+
+                if (Settings.FPSCounter)
+                {
+                    float FPS;
+                    float timepassed;
+                    try
+                    {
+                        timepassed = (float)(Utility.TimeStamp() - GameStartedTimestamp) / (float)1000;
+                        FPS = TotalFrames / timepassed;
+                    }
+                    catch (DivideByZeroException) { FPS = 0; timepassed = 0; }
+
+                    Console.Title = $"FPS: {FPS}, deltaTime: {Time.deltaTime}";
+                }
+
+                if (Debug.DrawCoordinateSystemEveryFrame)
+                    Debug.DrawCoordinateSystem();
+
+                // Draw gameobjects
+                //collisionMap = new int?[GameSizeHeight, GameSizeWidth];
+
+                //gamefield = new char[GameSizeHeight, GameSizeWidth];
+                //gamefieldRendered = new char[GameSizeHeight, GameSizeWidth];
+                foreach (GameObject obj in Utility.SortGameObjects(Objects))
+                {
+                    HandleGameObject(obj);
+                }
+
+                CleanBuffered();
+                UpdateBuffer();
+
+                // External update loop
+                if (UpdateMethod != null)
+                {
+                    UpdateMethod.Invoke();
+                }
+
+                TotalFrames++;
+            }
+        }
+
+        private static void HandleGameObject(GameObject obj)
+        {
+            if (!obj.activeSelf || obj.sprite.draw == null)
+            {
+                return;
+            }
+
+            //HandleCollisions(obj.sprite.collision, obj.transform.position, (int)obj.identifier);
+            PlaceCharArray(obj.sprite.draw, (int)obj.transform.position.x, (int)obj.transform.position.y);
+        }
+
+        private static void PlaceCharArray(char[,] sprite, int x, int y)
+        {
+            if (sprite == null)
+            {
+                return;
+            }
+            //Vector2 position = obj.transform.position;
+            //char[][] sprite = obj.sprite.draw;
+
+            for (int loop_y = 0; loop_y < sprite.GetLength(0); loop_y++)
+            {
+                for (int loop_x = 0; loop_x < sprite.GetLength(1); loop_x++)
+                {
+                    SetCell(sprite[loop_y, loop_x], x + loop_x, y + loop_y);
+                    /*
+                    if (sprite[y][x] != ' ')
+                    {
+                        //Utility.SetPixel(sprite[y][x], (int)pos.x + x, (int)pos.y + y);
+                        SetCell(sprite[y][x], (int)pos.x + x, (int)pos.y + y);
+                    }*/
+                }
+            }
+        }
+
+        private static void HandleCollisions(bool[,] collision, Vector2 position, int identifier)
+        {
+            if (collision == null)
+            {
+                return;
+            }
+
+            bool collided = false;
+
+            for (int y = 0; y < collision.GetLength(0); y++)
+            {
+                for (int x = 0; x < collision.GetLength(1); x++)
+                {
+                    //TODO: Implement collision system
+                    if (collisionMap[(int)position.y + y, (int)position.x + x] == null)
+                    {
+                        collisionMap[(int)position.y + y, (int)position.x + x] = identifier;
+                    }
+                    else
+                    {
+                        collided = true;
+                    }
+                }
+            }
+
+            if (collided)
+            {
+                System.Diagnostics.Debug.WriteLine("Collided");
+                //Objects[identifier].events.OnCollisionEnter
+            }
+        }
+
+        private static void CleanBuffered()
+        {
+            //List<GameObject> objectsList = Objects;
+            for (int i = 0; i < Math.Min(previousFrameObjects.Count, Objects.Count); i++)
+            {
+                //Debug.Log($"previus: {previousFrameObjects[i].transform.position}, now: {objectsList[i].transform.position}");
+                Debug.Log(previousFrameObjects[i].transform.position == Objects[i].transform.position);
+                if (true)
+                {
+                    Debug.Log("Object is not equal to new transform");
+                    Vector2 position = Objects[i].transform.position;
+                    for (int y = 0; y < Objects[i].sprite.draw.GetLength(0); y++)
+                    {
+                        for (int x = 0; x < Objects[i].sprite.draw.GetLength(1); x++)
+                        {
+                            gamefield[(int)position.y + y, (int)position.x + x] = ' ';
+                            //SetCell(' ', (int)position.x + x, (int)position.y + y);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void UpdateBuffer()
+        {
+
+            for (int y = 0; y < Settings.GameSizeHeight; y++)
+            {
+                for (int x = 0; x < Settings.GameSizeWidth; x++)
+                {
+                    char value = gamefield[y, x];
+                    if (value != '\0')
+                    {
+                        Utility.SetPixel(value, x, y);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Set a specific cell's value.
+        /// </summary>
+        public static void SetCell(char value, int x, int y)
+        {
+            if (0 < x && x < Settings.GameSizeWidth &&
+                0 < y && y < Settings.GameSizeHeight)
+            {
+                gamefield[y, x] = gamefieldRendered[y, x] == value ? '\0' : value;
+            }
+        }
+        /// <summary>
+        /// Sets cell values by an character array, at a location.
+        /// </summary>
+        /// <param name="HorizontalText">Char array put horizontally or vertically.</param>
+        public static void SetCell(char[] values, int x, int y, bool HorizontalText = true)
+        {
+            if (HorizontalText)
+            {
+                for (int i = 0; i < values.Length; i++)
+                {
+                    SetCell(values[i], x + i, y);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < values.Length; i++)
+                {
+                    SetCell(values[i], x, y + i);
+                }
+            }
+        }
+    }
+
+    static class Debug
+    {
+        /// <summary>
+        /// Currently affects performance massively.  For drawing coordinate system only once refer to DrawCoordinateSystem method.
+        /// </summary>
+        public static bool DrawCoordinateSystemEveryFrame { get; set; } = false;
+
+        /// <summary>
+        /// The maximum width of coordinate system, setting the value to null results in max width being equal to Game.GameSizeWidth.
+        /// </summary>
+        public static int? CoordinateWidth { get; set; } = null; //100
+        /// <summary>
+        /// The maximum height of coordinate system, setting the value to null results in max height being equal to Game.GameSizeHeight.
+        /// </summary>
+        public static int? CoordinateHeight { get; set; } = null; //30
+        /// <summary>
+        /// The interval of numbers displayed on each axis.
+        /// </summary>
+        public static int CoordinateInterval { get; set; } = 5;
+
+        /// <summary>
+        /// Log mode, <code>Spool</code> to log the output to a file, <code>DebugIDE</code> to write to special IDE debugging channel.
+        /// </summary>
+        public static logMode LogMode = logMode.DebugIDE;
+
+        private static StreamWriter fs = null;
+
+        /// <summary>
+        /// Draws coordinate system
+        /// </summary>
+        public static void DrawCoordinateSystem()
+        {
+            int Width = CoordinateWidth == null ? Settings.GameSizeWidth : (int)CoordinateWidth;
+            int Height = CoordinateHeight == null ? Settings.GameSizeHeight : (int)CoordinateHeight;
+
+
+            Game.SetCell('x', 0, 0);
+            for (int x = CoordinateInterval; x + CoordinateInterval < Math.Min(Width, Console.BufferWidth); x += CoordinateInterval)
+            {
+                //Utility.SetPixel('|', x, 0);
+                Game.SetCell('|', x, 1);
+                //Utility.SetPixel(x.ToString(), x, 2);
+                Game.SetCell(x.ToString().ToCharArray(), x, 3);
+            }
+
+            for (int y = CoordinateInterval; y + CoordinateInterval < Math.Min(Height, Console.BufferHeight); y += CoordinateInterval)
+            {
+                //Utility.SetPixel("--", 0, y);
+                Game.SetCell("--".ToCharArray(), 1, y);
+
+                //Utility.SetPixel(y.ToString(), 4, y);
+                Game.SetCell(y.ToString().ToCharArray(), 4, y);
+            }
+        }
+
+        /// <summary>
+        /// Logs a message to 'latest_log.txt'.
+        /// </summary>
+        public static void Log(object message)
+        {
+            switch (LogMode)
+            {
+                case logMode.Spool:
+                    write(message, logType.INFO);
+                    return;
+                case logMode.DebugIDE:
+                    System.Diagnostics.Debug.WriteLine(message);
+                    return;
+            }
+        }
+        public static void LogError(object message)
+        {
+            switch (LogMode)
+            {
+                case logMode.Spool:
+                    write(message, logType.ERROR);
+                    return;
+                case logMode.DebugIDE:
+                    System.Diagnostics.Debug.WriteLine(message);
+                    return;
+            }
+        }
+        public static void LogWarning(object message)
+        {
+            switch (LogMode)
+            {
+                case logMode.Spool:
+                    write(message, logType.WARNING);
+                    return;
+                case logMode.DebugIDE:
+                    System.Diagnostics.Debug.WriteLine(message);
+                    return;
+                default:
+                    break;
+            }
+        }
+
+        private enum logType { INFO, WARNING, ERROR, }
+        public enum logMode { Spool, DebugIDE }
+
+        private static void write(object message, logType logType)
+        {
+            if (fs == null)
+            {
+                fs = initLog();
+            }
+
+            fs.WriteLineAsync($"[{DateTime.Now.ToShortTimeString()}][{logType.ToString()}] " + message);
+        }
+
+        private static StreamWriter initLog()
+        {
+            if (File.Exists("latest_log.txt"))
+            {
+                File.Move("latest_log.txt", $"log_{File.ReadLines("latest_log.txt").First()}.txt");
+            }
+
+            StreamWriter sw = new StreamWriter("latest_log.txt");
+            sw.WriteLine(Utility.TimeStamp());
+            sw.WriteLine("\nLog initialized\n");
+            return sw;
+        }
+    }
+
+    static class Time
+    {
+        /// <summary>
+        /// Still experimenting with this...
+        /// </summary>
+        public static float deltaTime
+        {
+            get; set;
+        }
+
+    }
+
+    static class Utility
     {
         public static void SetPixel(string value, int x, int y)
         {
-            if (0 < x && x < Console.BufferWidth && 
+            if (0 < x && x < Console.BufferWidth &&
                 0 < y && y < Console.BufferHeight)
             {
                 Console.SetCursorPosition(x, y);
@@ -1195,12 +1201,7 @@ namespace RetroEngine
         }
     }
 
-    public enum CoordinateSystemType
-    {
-        TopLeft, BottomLeft, Middle, TopRight, BottomRight,
-    }
-
-    public class Exceptions
+    static class Exceptions
     {
         public class GameObjectNotInstantiatedException : Exception
         {
@@ -1224,6 +1225,7 @@ namespace RetroEngine
             }
         }
     }
+
 }
 
 
