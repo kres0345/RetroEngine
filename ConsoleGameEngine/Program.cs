@@ -15,6 +15,7 @@ namespace ConsoleGameEngineGame
             // Assigns start method
             Game.StartMethod = Start;
             Game.UpdateMethod = Update;
+            
 
             //Debug.InitiateLog();
 
@@ -80,10 +81,12 @@ namespace ConsoleGameEngineGame
             player1obj = new GameObject();
             player1obj.transform.position = new Vector2(3, 3);
             player1obj.sprite.draw = Player1;
+            player1obj.sprite.collision = ASCIISprite.GenerateCollision(player1obj.sprite.draw);
             
             //Game.Objects.Add("Player1", player1obj);
             bulletobj = new GameObject();
             bulletobj.sprite.draw = Bullet;
+            bulletobj.sprite.collision = ASCIISprite.GenerateCollision(bulletobj.sprite.draw);
             bulletobj.SetActive(false);
 
             player1obj = GameObject.Instantiate(player1obj);
@@ -97,70 +100,56 @@ namespace ConsoleGameEngineGame
             //GameObject player1 = Game.Objects["Player1"];
             //GameObject bullet = Game.Objects["Bullet"];
 
-            GameObject player1 = player1obj.Get();
-            GameObject bullet = bulletobj.Get();
-
             //GameObject player1 = Game.Objects[(int)player1obj.identifier];
             //GameObject bullet = Game.Objects[(int)bulletobj.identifier];
 
-            if (bullet.activeSelf)
+            if (bulletobj.activeSelf)
             {
-                bullet.transform.position = new Vector2(bullet.transform.position.x + BulletSpeed, bullet.transform.position.y); 
+                bulletobj.transform.position = new Vector2(bulletobj.transform.position.x + BulletSpeed, bulletobj.transform.position.y); 
                 //* Time.deltaTime
             }
 
             if (Input.GetKey(ConsoleKey.D))
             {
-                player1.transform.position = new Vector2(player1.transform.position.x + (1 * PlayerSpeed), player1.transform.position.y);
+                player1obj.transform.position = new Vector2(player1obj.transform.position.x + (1 * PlayerSpeed), player1obj.transform.position.y);
             }
             else if (Input.GetKey(ConsoleKey.W))
             {
-                player1.transform.position = new Vector2(player1.transform.position.x, player1.transform.position.y - (1 * PlayerSpeed));
+                player1obj.transform.position = new Vector2(player1obj.transform.position.x, player1obj.transform.position.y - (1 * PlayerSpeed));
             }
             else if (Input.GetKey(ConsoleKey.S))
             {
-                player1.transform.position = new Vector2(player1.transform.position.x, player1.transform.position.y + (1 * PlayerSpeed));
+                player1obj.transform.position = new Vector2(player1obj.transform.position.x, player1obj.transform.position.y + (1 * PlayerSpeed));
             }
             else if (Input.GetKey(ConsoleKey.A))
             {
-                player1.transform.position = new Vector2(player1.transform.position.x - (1 * PlayerSpeed), player1.transform.position.y);
+                player1obj.transform.position = new Vector2(player1obj.transform.position.x - (1 * PlayerSpeed), player1obj.transform.position.y);
             }
             else if (Input.GetKey(ConsoleKey.Spacebar))
             {
-                bullet.transform.position = new Vector2(player1.transform.position.x + 1, player1.transform.position.y + 1);
+                bulletobj.transform.position = new Vector2(player1obj.transform.position.x + 1, player1obj.transform.position.y + 1);
                 //bullet.transform.position.Add(player1.sprite.width, 0);
-                bullet.SetActive(true);
-            }
-            else if (Input.GetKey(ConsoleKey.DownArrow))
-            {
-                if (bullet.activeSelf)
-                {
-                    bullet.transform.position = new Vector2(bullet.transform.position.x, bullet.transform.position.y + 1);
-                }
-            }
-            else if (Input.GetKey(ConsoleKey.UpArrow))
-            {
-                if (bullet.activeSelf)
-                {
-                    bullet.transform.position = new Vector2(bullet.transform.position.x, bullet.transform.position.y - 1);
-                }
+                bulletobj.SetActive(true);
             }
             else if (Input.GetKey(ConsoleKey.Backspace))
             {
-                bullet.SetActive(false);
+                bulletobj.SetActive(false);
             }
             else if(Input.GetKey(ConsoleKey.Escape))
             {
                 Game.Exit();
             }
+
+            bulletobj.Update();
+            player1obj.Update();
+
         }
     }
 }
 
 namespace RetroEngine
 {
-
-    class Input
+    static class Input
     {
         /// <summary>
         /// Checks for key presses during each frame.
@@ -224,6 +213,11 @@ namespace RetroEngine
         /// </summary>
         public static int CoordinateInterval { get; set; } = 5;
 
+        /// <summary>
+        /// Log mode, <code>Spool</code> to log the output to a file, <code>DebugIDE</code> to write to special IDE debugging channel.
+        /// </summary>
+        public static logMode LogMode = logMode.DebugIDE;
+
         private static StreamWriter fs = null;
 
         /// <summary>
@@ -233,7 +227,7 @@ namespace RetroEngine
         {
             int Width = CoordinateWidth == null ? Game.GameSizeWidth : (int)CoordinateWidth;
             int Height = CoordinateHeight == null ? Game.GameSizeHeight : (int)CoordinateHeight;
-            
+
 
             Game.SetCell('x', 0, 0);
             for (int x = CoordinateInterval; x + CoordinateInterval < Math.Min(Width, Console.BufferWidth); x += CoordinateInterval)
@@ -257,13 +251,49 @@ namespace RetroEngine
         /// <summary>
         /// Logs a message to 'latest_log.txt'.
         /// </summary>
-        public static void Log(object message) => write(message, LogType.INFO);
-        public static void LogError(object message) => write(message, LogType.ERROR);
-        public static void LogWarning(object message) => write(message, LogType.WARNING);
+        public static void Log(object message)
+        {
+            switch (LogMode)
+            {
+                case logMode.Spool:
+                    write(message, logType.INFO);
+                    return;
+                case logMode.DebugIDE:
+                    System.Diagnostics.Debug.WriteLine(message);
+                    return;
+            }
+        }
+        public static void LogError(object message)
+        {
+            switch (LogMode)
+            {
+                case logMode.Spool:
+                    write(message, logType.ERROR);
+                    return;
+                case logMode.DebugIDE:
+                    System.Diagnostics.Debug.WriteLine(message);
+                    return;
+            }
+        }
+        public static void LogWarning(object message)
+        {
+            switch (LogMode)
+            {
+                case logMode.Spool:
+                    write(message, logType.WARNING);
+                    return;
+                case logMode.DebugIDE:
+                    System.Diagnostics.Debug.WriteLine(message);
+                    return;
+                default:
+                    break;
+            }
+        }
 
-        private enum LogType { INFO, WARNING, ERROR, }
+        private enum logType { INFO, WARNING, ERROR, }
+        public enum logMode { Spool, DebugIDE }
 
-        private static void write(object message, LogType logType)
+        private static void write(object message, logType logType)
         {
             if (fs == null)
             {
@@ -293,22 +323,22 @@ namespace RetroEngine
         /// List of all GameObjects.
         /// </summary>
         /// <remarks>Objects must NOT be removed from this list, they should be nullified.</remarks>
-        public static List<GameObject> Objects = new List<GameObject>();
+        public static List<GameObject> Objects { get; } = new List<GameObject>();
         public static Action UpdateMethod { get; set; }
         public static Action StartMethod { get; set; }
-        public static int TotalFrames { get; private set; } = 0;
-        public static int GameSizeWidth { get; set; } = 200;
-        public static int GameSizeHeight { get; set; } = 100;
+        public static int TotalFrames { get; private set; }
+        public static int GameSizeWidth { get; set; } = 100;
+        public static int GameSizeHeight { get; set; } = 50;
         public static long GameStartedTimestamp { get; private set; }
 
         //private static Timer updateTimer;
-        private static bool gamePlaying = false;
-        private static long previousFrameTimestamp = 0;
-        private static char[,] Gamefield { get; set; } = new char[GameSizeHeight, GameSizeWidth];
-        private static char[,] GamefieldRendered { get; set; } = new char[GameSizeHeight, GameSizeWidth];
-        private static int?[,] CollisionMap { get; set; } = new int?[GameSizeHeight, GameSizeWidth];
-        private static int?[,] CollisionMapRendered { get; set; } = new int?[GameSizeHeight, GameSizeWidth];
-        public static Tuple<bool, List<int>>[,] CollidedMap { get; set; } = new Tuple<bool, List<int>>[GameSizeHeight, GameSizeWidth];
+        private static bool gamePlaying;
+        //private static long previousFrameTimestamp = 0;
+        private static char[,] gamefield { get; set; } = new char[GameSizeHeight, GameSizeWidth];
+        private static char[,] gamefieldRendered { get; set; } = new char[GameSizeHeight, GameSizeWidth];
+        private static int?[,] collisionMap { get; set; } = new int?[GameSizeHeight, GameSizeWidth];
+        private static int?[,] collisionMapRendered { get; set; } = new int?[GameSizeHeight, GameSizeWidth];
+        public static Tuple<bool, List<int>>[,] collidedMap { get; set; } = new Tuple<bool, List<int>>[GameSizeHeight, GameSizeWidth];
         private static List<GameObject> previousFrameObjects = new List<GameObject>();
 
         public static void Exit() => gamePlaying = false;
@@ -316,6 +346,7 @@ namespace RetroEngine
         public static void Play()
         {
             // Internal start
+            long currentTimestamp = Utility.TimeStamp();
             Console.CursorVisible = false;
             Input.ListenKeys();
 
@@ -325,15 +356,17 @@ namespace RetroEngine
                 StartMethod.Invoke();
             }
 
+            // Draw gameobjects
             foreach (GameObject obj in Utility.SortGameObjects(Objects))
             {
-                DrawCharArray(obj.sprite.draw, obj.transform.position);
-                HandleCollisions(obj.sprite.collision, obj.transform.position, (int)obj.identifier);
+                HandleGameObject(obj);
             }
 
-            previousFrameObjects = Objects;
+            //previousFrameObjects = Objects;
             GameStartedTimestamp = Utility.TimeStamp();
-            previousFrameTimestamp = Utility.TimeStamp();
+
+            long previousFrameTimestamp = currentTimestamp;
+            currentTimestamp = Utility.TimeStamp();
 
             gamePlaying = true;
 
@@ -341,14 +374,14 @@ namespace RetroEngine
             while (gamePlaying) {
 
                 // Internal Update loop
-                long currentTimestamp = Utility.TimeStamp();
+                previousFrameObjects = Objects;
+                gamefield = gamefieldRendered;
+                previousFrameTimestamp = currentTimestamp;
+                currentTimestamp = Utility.TimeStamp();
+
                 float delta = currentTimestamp - previousFrameTimestamp;
-
-                try { Time.deltaTime = delta / (float)1000; }
-                catch (DivideByZeroException) { Time.deltaTime = 0; }
-
-                //previousFrameTimestamp = TimeStamp();
-
+                Time.deltaTime = delta != 0 ? delta / (float)1000 : 0;
+                
                 if (Settings.FPSCounter)
                 {
                     float FPS;
@@ -360,29 +393,24 @@ namespace RetroEngine
                     }
                     catch (DivideByZeroException) { FPS = 0; timepassed = 0; }
 
-                    Console.Title = $"FPS: {FPS}, deltaTime: {Time.deltaTime}, delta: {delta}";
+                    Console.Title = $"FPS: {FPS}, deltaTime: {Time.deltaTime}";
                 }
-
-                previousFrameTimestamp = Utility.TimeStamp();
-
-                //Console.Clear();
 
                 if (Debug.DrawCoordinateSystemEveryFrame)
-                {
                     Debug.DrawCoordinateSystem();
-                }
 
                 // Draw gameobjects
+                //collisionMap = new int?[GameSizeHeight, GameSizeWidth];
+
+                //gamefield = new char[GameSizeHeight, GameSizeWidth];
+                //gamefieldRendered = new char[GameSizeHeight, GameSizeWidth];
                 foreach (GameObject obj in Utility.SortGameObjects(Objects))
                 {
-                    DrawCharArray(obj.sprite.draw, obj.transform.position);
-                    HandleCollisions(obj.sprite.collision, obj.transform.position, (int)obj.identifier);
+                    HandleGameObject(obj);
                 }
 
                 CleanBuffered();
-                previousFrameObjects = Objects;
                 UpdateBuffer();
-                Gamefield = GamefieldRendered;
 
                 // External update loop
                 if (UpdateMethod != null)
@@ -394,7 +422,18 @@ namespace RetroEngine
             }
         }
 
-        private static void DrawCharArray(char[,] sprite, Vector2 position)
+        private static void HandleGameObject(GameObject obj)
+        {
+            if (!obj.activeSelf || obj.sprite.draw == null)
+            {
+                return;
+            }
+
+            //HandleCollisions(obj.sprite.collision, obj.transform.position, (int)obj.identifier);
+            PlaceCharArray(obj.sprite.draw, (int)obj.transform.position.x, (int)obj.transform.position.y); 
+        }
+
+        private static void PlaceCharArray(char[,] sprite, int x, int y)
         {
             if (sprite == null)
             {
@@ -403,11 +442,11 @@ namespace RetroEngine
             //Vector2 position = obj.transform.position;
             //char[][] sprite = obj.sprite.draw;
 
-            for (int y = 0; y < sprite.GetLength(0); y++)
+            for (int loop_y = 0; loop_y < sprite.GetLength(0); loop_y++)
             {
-                for (int x = 0; x < sprite.GetLength(1); x++)
+                for (int loop_x = 0; loop_x < sprite.GetLength(1); loop_x++)
                 {
-                    SetCell(sprite[y, x], (int)position.x + x, (int)position.y + y);
+                    SetCell(sprite[loop_y, loop_x], x + loop_x, y + loop_y);
                     /*
                     if (sprite[y][x] != ' ')
                     {
@@ -418,25 +457,56 @@ namespace RetroEngine
             }
         }
 
-        private static void HandleCollisions(bool[][] collision, Vector2 position, int identifier)
+        private static void HandleCollisions(bool[,] collision, Vector2 position, int identifier)
         {
             if (collision == null)
             {
                 return;
             }
 
-            for (int y = 0; y < collision.Length; y++)
+            bool collided = false;
+
+            for (int y = 0; y < collision.GetLength(0); y++)
             {
-                for (int x = 0; x < collision[0].Length; x++)
+                for (int x = 0; x < collision.GetLength(1); x++)
                 {
                     //TODO: Implement collision system
-                    if (CollisionMap[y, x] == null)
+                    if (collisionMap[(int)position.y + y, (int)position.x + x] == null)
                     {
-                        CollisionMap[y, x] = identifier;
+                        collisionMap[(int)position.y + y, (int)position.x + x] = identifier;
                     }
                     else
                     {
-                        //Objects[identifier].events.OnCollisionEnter
+                        collided = true;
+                    }
+                }
+            }
+
+            if (collided)
+            {
+                System.Diagnostics.Debug.WriteLine("Collided");
+                //Objects[identifier].events.OnCollisionEnter
+            }
+        }
+
+        private static void CleanBuffered()
+        {
+            //List<GameObject> objectsList = Objects;
+            for (int i = 0; i < Math.Min(previousFrameObjects.Count, objectsList.Count); i++)
+            {
+                //Debug.Log($"previus: {previousFrameObjects[i].transform.position}, now: {objectsList[i].transform.position}");
+                Debug.Log(previousFrameObjects[i].transform.position == Objects[i].transform.position);
+                if (true)
+                {
+                    Debug.Log("Object is not equal to new transform");
+                    Vector2 position = objectsList[i].transform.position;
+                    for (int y = 0; y < objectsList[i].sprite.draw.GetLength(0); y++)
+                    {
+                        for (int x = 0; x < objectsList[i].sprite.draw.GetLength(1); x++)
+                        {
+                            gamefield[(int)position.y + y, (int)position.x + x] = ' ';
+                            //SetCell(' ', (int)position.x + x, (int)position.y + y);
+                        }
                     }
                 }
             }
@@ -444,35 +514,15 @@ namespace RetroEngine
 
         private static void UpdateBuffer()
         {
+
             for (int y = 0; y < GameSizeHeight; y++)
             {
                 for (int x = 0; x < GameSizeWidth; x++)
                 {
-                    char value = Gamefield[y, x];
+                    char value = gamefield[y, x];
                     if (value != '\0')
                     {
                         Utility.SetPixel(value, x, y);
-                    }
-                }
-            }
-        }
-
-        private static void CleanBuffered()
-        {
-            List<GameObject> objectsList = Objects;
-            for (int i = 0; i < Math.Min(previousFrameObjects.Count, objectsList.Count); i++)
-            {
-                if (!previousFrameObjects[i].transform.position.EqualsInt(objectsList[i].transform.position))
-                {
-                    System.Diagnostics.Debug.Print("Object is not equal to new transform");
-                    Vector2 position = objectsList[i].transform.position;
-                    for (int y = 0; y < objectsList[i].sprite.draw.GetLength(0); y++)
-                    {
-                        for (int x = 0; x < objectsList[i].sprite.draw.GetLength(1); x++)
-                        {
-                            Gamefield[(int)position.y + y, (int)position.x + x] = ' ';
-                            //SetCell(' ', (int)position.x + x, (int)position.y + y);
-                        }
                     }
                 }
             }
@@ -486,16 +536,8 @@ namespace RetroEngine
             if (0 < x && x < GameSizeWidth &&
                 0 < y && y < GameSizeHeight)
             {
-                Gamefield[y, x] = GamefieldRendered[y, x] == value ? '\0' : value;
+                gamefield[y, x] = gamefieldRendered[y, x] == value ? '\0' : value;
             }
-            /*
-            if (GamefieldRendered[y, x] == value)
-            {
-                Gamefield[y, x] = '\0';
-                return;
-            }
-
-            Gamefield[y, x] = value;*/
         }
         /// <summary>
         /// Sets cell values by an character array, at a location.
@@ -508,14 +550,6 @@ namespace RetroEngine
                 for (int i = 0; i < values.Length; i++)
                 {
                     SetCell(values[i], x + i, y);
-                    /*
-                    if (GamefieldRendered[y, x + i] == values[i])
-                    {
-                        Gamefield[y, x + i] = values[i];
-                        continue;
-                    }
-
-                    Gamefield[y, x + i] = values[i];*/
                 }
             }
             else
@@ -533,7 +567,6 @@ namespace RetroEngine
         public ASCIISprite sprite { get; set; }
         public Transform transform { get; set; }
         public Events events { get; }
-        public bool[][] collision { get; set; }
         public string name { get; set; }
         public int? identifier { get; private set; }
         public bool activeSelf { get; private set; }
@@ -574,7 +607,6 @@ namespace RetroEngine
             this.sprite = gameObject.sprite;
             this.transform = gameObject.transform;
             this.events = gameObject.events;
-            this.collision = gameObject.collision;
             this.name = gameObject.name;
             this.activeSelf = gameObject.activeSelf;
         }
@@ -670,20 +702,18 @@ namespace RetroEngine
         /// <param name="obj">The GameObject to instantiate</param>
         public static GameObject Instantiate(GameObject obj)
         {
-            GameObject t = new GameObject
-            {
-                identifier = Game.Objects.Count
-            };
+            GameObject t = obj.Clone();
+            t.identifier = Game.Objects.Count;
+
             Game.Objects.Add(t);
             return t;
         }
         public static GameObject Instantiate(GameObject obj, string name)
         {
-            GameObject t = new GameObject
-            {
-                identifier = Game.Objects.Count,
-                name = name
-            };
+            GameObject t = obj.Clone();
+            t.identifier = Game.Objects.Count;
+            t.name = name;
+
             Game.Objects.Add(t);
             return t;
         }
@@ -692,16 +722,31 @@ namespace RetroEngine
         /// Find GameObject by name.
         /// </summary>
         /// <param name="name"></param>
-        public static GameObject Find(string name)
-        {
-            return Game.Objects.Where(i => i.name == name).FirstOrDefault();
-        }
+        public static GameObject Find(string name) => Game.Objects.Where(i => i.name == name).FirstOrDefault();
         
         public class Events
         {
             public Func<int> OnCollisionEnter = null;
             public Func<int> OnCollisionStay = null;
             public Func<int> OnCollisionExit = null;
+
+            public bool TryGetOnCollisionEnter(out Func<int> OnCollisionEnter)
+            {
+                OnCollisionEnter = this.OnCollisionEnter;
+                return this.OnCollisionEnter != null;
+            }
+
+            public bool TryGetOnCollisionStay(out Func<int> OnCollisionStay)
+            {
+                OnCollisionStay = this.OnCollisionStay;
+                return this.OnCollisionStay != null;
+            }
+
+            public bool TryGetOnCollisionExit(out Func<int> OnCollisionExit)
+            {
+                OnCollisionExit = this.OnCollisionExit;
+                return this.OnCollisionExit != null;
+            }
         }
     }
 
@@ -712,7 +757,7 @@ namespace RetroEngine
 
         public Transform()
         {
-            position = new Vector2();
+            position = new Vector2(0, 0);
             z_index = 10;
         }
         public Transform(Vector2 position)
@@ -733,99 +778,77 @@ namespace RetroEngine
     class ASCIISprite
     {
         public char[,] draw { get; set; }
-            /*
-            get { return draw; }
-            set
-            {
-                UpdateDimensions();
-                draw = value;
-            }*/
-        public bool[][] collision { get; set; }
-        /*
-        public int width
-        {
-            get { return width; }
-            private set {
-                if (value > 0)
-                    width = value;
-                else
-                    throw new Exceptions.HeightOrWidthLessThanOrEqualToZeroException();
-            }
-        }
-        public int height
-        {
-            get { return height; }
-            private set {
-                if (value > 0)
-                    height = value;
-                else
-                    throw new Exceptions.HeightOrWidthLessThanOrEqualToZeroException();
-            }
-        }*/
+        public bool[,] collision { get; set; }
+        public bool solid { get; set; }
 
         public ASCIISprite()
         {
-
-        }/*
-        public ASCIISprite(int width, int height)
-        {
-            this.width = width;
-            this.height = height;
-            this.draw = new char[width, height];
-        }*/
+            this.solid = true;
+        }
         public ASCIISprite(char[,] draw)
         {
+            this.solid = true;
             this.draw = draw;
-            //this.width = draw.Length;
-            //this.height = draw[0].Length;
         }
-        public ASCIISprite(char[,] draw, bool[][] collision)
+        public ASCIISprite(char[,] draw, bool[,] collision)
         {
             this.draw = draw;
-            //this.width = draw.Length;
-            //this.height = draw[0].Length;
             this.collision = collision;
         }
 
-        public int width() => draw.GetLength(0);
-        public int height() => draw.GetLength(1);
+        /// <summary>
+        /// Returns width of GameObject.
+        /// </summary>
+        public int width() => draw.GetLength(1);
+        /// <summary>
+        /// Returns height of GameObject.
+        /// </summary>
+        public int height() => draw.GetLength(0);
 
-        /*
-        private void UpdateDimensions()
+        /// <summary>
+        /// Generates collision based on char array.
+        /// </summary>
+        /// <param name="charArray">Char array of GameObject</param>
+        /// <param name="excluded">Character to exclude from collision generation, defaults to {float space}(' ')</param>
+        /// <returns>Generated collision</returns>
+        public static bool[,] GenerateCollision(char[,] charArray, char excluded = ' ')
         {
-            if (this.draw == null || this.draw.GetLength(0) == 0 || draw.GetLength(1) == 0)
-            {
-                return;
-            }
+            bool[,] Collision = new bool[charArray.GetLength(0), charArray.GetLength(1)];
 
-            this.width = this.draw.Length;
-            this.height = this.draw[0].Length;
-        }*/
-
-        public static bool[][] GenerateCollision(char[][] draw)
-        {
-            bool[][] Collision = new bool[draw.Length][];
-            for (int y = 0; y < draw.Length; y++)
+            for (int y = 0; y < charArray.GetLength(0); y++)
             {
-                Collision[y] = new bool[draw[y].Length];
-                for (int x = 0; x < draw[y].Length; x++)
+                for (int x = 0; x < charArray.GetLength(1); x++)
                 {
-                    if (draw[y][x] != ' ')
+                    if (excluded == charArray[y, x])
                     {
-                        Collision[y][x] = true;
+                        continue;
                     }
+
+                    Collision[y, x] = true;
                 }
             }
             return Collision;
         }
-        public static bool[][] GenerateCollision(ASCIISprite sprite)
+        /// <summary>
+        /// Generates collision based on char array with array of characters to exclude from generation.
+        /// </summary>
+        /// <param name="charArray">Char array of GameObject</param>
+        /// <param name="excluded">Multiple characters to exclude from collision generation</param>
+        /// <returns>Generated collision</returns>
+        public static bool[,] GenerateCollision(char[,] charArray, char[] excluded)
         {
-            bool[][] Collision = new bool[sprite.draw.Length][];
-            for (int y = 0; y < sprite.draw.GetLength(0); y++)
+            bool[,] Collision = new bool[charArray.GetLength(0), charArray.GetLength(1)];
+
+            for (int y = 0; y < charArray.GetLength(0); y++)
             {
-                for (int x = 0; x < sprite.draw.GetLength(1); x++)
+                for (int x = 0; x < charArray.GetLength(1); x++)
                 {
-                    Collision[y][x] = sprite.draw[y, x] != ' ';
+                    if (excluded.Contains(charArray[y, x]))
+                    {
+                        continue;
+                    }
+
+                    Collision[y, x] = true;
                 }
             }
             return Collision;
@@ -835,7 +858,7 @@ namespace RetroEngine
     /// <summary>
     /// Vector2 holds 2-dimensionel coordinate set(x and y).
     /// </summary>
-    struct Vector2
+    struct Vector2 : IEquatable<Vector2>
     {
         public float x { get; set; }
         public float y { get; set; }
@@ -846,7 +869,7 @@ namespace RetroEngine
             this.y = y;
         }
 
-
+        #region Readonly directions
         /// <summary>
         /// Shorthand for writing Vector2(0, 0).
         /// </summary>
@@ -889,6 +912,7 @@ namespace RetroEngine
                 return new Vector2(0, 1);
             }
         }
+        #endregion
 
         /*
         /// <summary>
@@ -986,7 +1010,29 @@ namespace RetroEngine
         /// </summary>
         public bool Equals(Vector2 vector2)
         {
+            if (ReferenceEquals(null, vector2))
+            {
+                return false;
+            }
+            if (ReferenceEquals(this, vector2))
+            {
+                return true;
+            }
+
             return x == vector2.x && y == vector2.y;
+        }
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+            {
+                return false;
+            }
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            return obj.GetType() == GetType() && Equals((Vector2)obj);
         }
 
         /// <summary>
