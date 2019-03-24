@@ -3,155 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using RetroEngine;
-
-namespace ConsoleGameEngineGame
-{
-    class MyGame
-    {
-
-        static void Main(string[] args)
-        {
-            // Assigns start method
-            Game.StartMethod = Start;
-            Game.UpdateMethod = Update;
-            
-
-            //Debug.InitiateLog();
-
-            // Starts game
-            Game.Play();
-        }
-
-        public static GameObject player1obj;
-        public static GameObject bulletobj;
-
-        static float PlayerSpeed = 1;
-        static float BulletSpeed = 0.5f;
-        /* www.oocities.org/spunk1111/men.htm#bald
-         *    __
-            .'  `'.
-           /  _    |
-           #_/.\==/.\
-          (, \_/ \\_/
-           |    -' |
-           \   '=  /
-           /`-.__.'
-        .-'`-.___|__
-       /    \       `.
-        */
-        /*
-        static char[][] Player1 = new char[10][] {
-            new char[] { ' ', ' ', ' ', ' ', ' ', ' ', ' ', '_', '_'},
-            new char[] { ' ', ' ', ' ', ' ', ' ', '.','\'', ' ', ' ', '`','\'', '.' },
-            new char[] { ' ', ' ', ' ', ' ', '/', ' ', ' ', '_', ' ', ' ', ' ', ' ', '|' },
-            new char[] { ' ', ' ', ' ', ' ', '#', '_', '/', '.','\\', '=', '=', '/', '.', '\\'},
-            new char[] { ' ', ' ', ' ', '(', ',', ' ','\\', '_', '/', ' ','\\','\\', '_', '/' },
-            new char[] { ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ', ' ', '-','\'', ' ', '|', },
-            new char[] { ' ', ' ', ' ', ' ','\\', ' ', ' ', ' ','\'', '=', ' ', ' ', '/', },
-            new char[] { ' ', ' ', ' ', ' ', '/', '`', '-', '.', '_', '_', '.','\'', },
-            new char[] { ' ', '.', '-','\'', '`', '-', '.', '_', '_', '_', '|', '_', '_' },
-            new char[] { '/', ' ', ' ', ' ', ' ','\\', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '`', '.' }
-        };*/
-        /*
-        static char[][] Player1 = new char[3][]
-        {
-            new char[] { '{', '0', '}' },
-            new char[] { '{', '+', '}' },
-            new char[] { '{', '0', '}' }
-        };
-        static char[][] Bullet = new char[1][]
-        {
-            new char[] { '=', '=', '>' }
-        };*/
-        static char[,] Player1 = new char[3,3]
-        {
-            { '{', '0', '}' },
-            { '{', '+', '}' },
-            { '{', '0', '}' }
-        };
-        static char[,] Bullet = new char[1, 3]
-        {
-            { '=', '=', '>' }
-        };
-
-        static void Start()
-        {
-            //GameObject obj = new GameObject();
-            player1obj = new GameObject();
-            player1obj.transform.position = new Vector2(3, 3);
-            player1obj.sprite.draw = Player1;
-            player1obj.sprite.collision = ASCIISprite.GenerateCollision(player1obj.sprite.draw);
-            
-            //Game.Objects.Add("Player1", player1obj);
-            bulletobj = new GameObject();
-            bulletobj.sprite.draw = Bullet;
-            bulletobj.sprite.collision = ASCIISprite.GenerateCollision(bulletobj.sprite.draw);
-            bulletobj.SetActive(false);
-
-            player1obj = GameObject.Instantiate(player1obj);
-            bulletobj = GameObject.Instantiate(bulletobj);
-            //Game.Objects.Add("Bullet", bulletobj);
-        }
-
-        // Called every frame update
-        static void Update()
-        {
-            //GameObject player1 = Game.Objects["Player1"];
-            //GameObject bullet = Game.Objects["Bullet"];
-
-            //GameObject player1 = Game.Objects[(int)player1obj.identifier];
-            //GameObject bullet = Game.Objects[(int)bulletobj.identifier];
-
-            if (bulletobj.activeSelf)
-            {
-                bulletobj.transform.position = new Vector2(bulletobj.transform.position.x + BulletSpeed, bulletobj.transform.position.y); 
-                //* Time.deltaTime
-            }
-
-            if (Input.GetKey(ConsoleKey.D))
-            {
-                player1obj.transform.position = new Vector2(player1obj.transform.position.x + (1 * PlayerSpeed), player1obj.transform.position.y);
-            }
-            else if (Input.GetKey(ConsoleKey.W))
-            {
-                player1obj.transform.position = new Vector2(player1obj.transform.position.x, player1obj.transform.position.y - (1 * PlayerSpeed));
-            }
-            else if (Input.GetKey(ConsoleKey.S))
-            {
-                player1obj.transform.position = new Vector2(player1obj.transform.position.x, player1obj.transform.position.y + (1 * PlayerSpeed));
-            }
-            else if (Input.GetKey(ConsoleKey.A))
-            {
-                player1obj.transform.position = new Vector2(player1obj.transform.position.x - (1 * PlayerSpeed), player1obj.transform.position.y);
-            }
-            else if (Input.GetKey(ConsoleKey.Spacebar))
-            {
-                bulletobj.transform.position = new Vector2(player1obj.transform.position.x + 1, player1obj.transform.position.y + 1);
-                //bullet.transform.position.Add(player1.sprite.width, 0);
-                bulletobj.SetActive(true);
-            }
-            else if (Input.GetKey(ConsoleKey.Backspace))
-            {
-                bulletobj.SetActive(false);
-            }
-            else if(Input.GetKey(ConsoleKey.Escape))
-            {
-                Game.Exit();
-            }
-
-            bulletobj.Update();
-            player1obj.Update();
-
-        }
-    }
-}
+//using RetroEngine;
 
 namespace RetroEngine
 {
     public enum CoordinateSystemType { TopLeft, BottomLeft, Middle, TopRight, BottomRight, }
 
-    class GameObject
+    public class GameObject
     {
         public ASCIISprite sprite { get; set; }
         public Transform transform { get; set; }
@@ -317,9 +175,11 @@ namespace RetroEngine
         
         public class Events
         {
+#pragma warning disable 0649
             public Func<int> OnCollisionEnter;
             public Func<int> OnCollisionStay;
             public Func<int> OnCollisionExit;
+#pragma warning restore 0649
 
             public bool TryGetOnCollisionEnter(out Func<int> OnCollisionEnter)
             {
@@ -341,7 +201,7 @@ namespace RetroEngine
         }
     }
 
-    class Transform
+    public class Transform
     {
         public Vector2 position { get; set; }
         public int z_index { get; set; }
@@ -366,7 +226,7 @@ namespace RetroEngine
         }
     }
 
-    class ASCIISprite
+    public class ASCIISprite
     {
         public char[,] draw { get; set; }
         public bool[,] collision { get; set; }
@@ -449,7 +309,7 @@ namespace RetroEngine
     /// <summary>
     /// Vector2 holds 2-dimensionel coordinate set(x and y).
     /// </summary>
-    struct Vector2 : IEquatable<Vector2>
+    public struct Vector2 : IEquatable<Vector2>
     {
         public float x { get; set; }
         public float y { get; set; }
@@ -601,6 +461,8 @@ namespace RetroEngine
         /// </summary>
         public bool Equals(Vector2 vector2)
         {
+            return GetHashCode() == vector2.GetHashCode();
+            /*
             if (ReferenceEquals(null, vector2))
             {
                 return false;
@@ -610,20 +472,15 @@ namespace RetroEngine
                 return true;
             }
 
-            return x == vector2.x && y == vector2.y;
+            return x == vector2.x && y == vector2.y;*/
         }
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj))
-            {
-                return false;
-            }
-            if (ReferenceEquals(this, obj))
-            {
-                return true;
-            }
-
-            return obj.GetType() == GetType() && Equals((Vector2)obj);
+            return GetHashCode() == obj.GetHashCode();
+        }
+        public override int GetHashCode()
+        {
+            return ToString().GetHashCode();
         }
 
         /// <summary>
@@ -688,7 +545,16 @@ namespace RetroEngine
         }
     }
 
-    static class Settings
+    public static class UI
+    {
+
+        public class Image
+        {
+
+        }
+    }
+
+    public static class Settings
     {
         /// <summary>
         /// Defines the coordinate (0, 0) point.
@@ -707,12 +573,15 @@ namespace RetroEngine
         public static bool SquareMode { get; set; } = false;
     }
 
-    static class Input
+    public static class Input
     {
         /// <summary>
         /// Checks for key presses during each frame.
         /// </summary>
         public static bool ListenForKeys { get; set; } = true;
+
+        public static float HorizontalAxis { get; private set; }
+        public static float VerticalAxis { get; private set; }
 
         private static Dictionary<int, ConsoleKey> frameKeys = new Dictionary<int, ConsoleKey>();
         private static Task keyListener = null;
@@ -749,9 +618,26 @@ namespace RetroEngine
                 }
             });
         }
+
+        public enum Axis { Horizontal, Vertical, }
+
+        /// <summary>
+        /// Try using <code>HorizontalAxis</code>/<code>VerticalAxis</code> instead.
+        /// </summary>
+        public static float GetAxis(Axis axis)
+        {
+            if (axis.Equals(Axis.Horizontal))
+            {
+                return HorizontalAxis;
+            }
+            else
+            {
+                return VerticalAxis;
+            }
+        }
     }
 
-    static class Game
+    public static class Game
     {
         /// <summary>
         /// List of all GameObjects.
@@ -928,10 +814,10 @@ namespace RetroEngine
             for (int i = 0; i < Math.Min(previousFrameObjects.Count, Objects.Count); i++)
             {
                 //Debug.Log($"previus: {previousFrameObjects[i].transform.position}, now: {objectsList[i].transform.position}");
-                Debug.Log(previousFrameObjects[i].transform.position == Objects[i].transform.position);
+                Debug.Log(previousFrameObjects[i].transform.position.x == Objects[i].transform.position.x && previousFrameObjects[i].transform.position.y == Objects[i].transform.position.y);
                 if (true)
                 {
-                    Debug.Log("Object is not equal to new transform");
+                    //Debug.Log("Object is not equal to new transform");
                     Vector2 position = Objects[i].transform.position;
                     for (int y = 0; y < Objects[i].sprite.draw.GetLength(0); y++)
                     {
@@ -995,7 +881,7 @@ namespace RetroEngine
         }
     }
 
-    static class Debug
+    public static class Debug
     {
         /// <summary>
         /// Currently affects performance massively.  For drawing coordinate system only once refer to DrawCoordinateSystem method.
@@ -1119,7 +1005,7 @@ namespace RetroEngine
         }
     }
 
-    static class Time
+    public static class Time
     {
         /// <summary>
         /// Still experimenting with this...
@@ -1131,7 +1017,7 @@ namespace RetroEngine
 
     }
 
-    static class Utility
+    public static class Utility
     {
         public static void SetPixel(string value, int x, int y)
         {
@@ -1201,7 +1087,7 @@ namespace RetroEngine
         }
     }
 
-    static class Exceptions
+    public static class Exceptions
     {
         public class GameObjectNotInstantiatedException : Exception
         {

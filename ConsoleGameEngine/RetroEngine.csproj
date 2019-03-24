@@ -1,8 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
+    <ApplicationIcon />
+    <StartupObject />
+    <Authors>Kresten Laust</Authors>
+    <Company>kres0345 @ github</Company>
+    <Description>RetroEngine is a game engine.</Description>
+    <PackageLicenseUrl>https://github.com/kres0345/RetroEngine/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/kres0345/RetroEngine</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/kres0345/RetroEngine</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>Game engine, RetroEngine, Console Library</PackageTags>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>retroengine.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
 </Project>
