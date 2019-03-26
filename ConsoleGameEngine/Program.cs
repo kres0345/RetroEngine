@@ -3,16 +3,30 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-//using RetroEngine;
 
 namespace RetroEngine
 {
     public enum CoordinateSystemType { TopLeft, BottomLeft, Middle, TopRight, BottomRight, }
 
+    public class Rigidbody
+    {
+        public Vector2 velocity { get; set; }
+
+        public Rigidbody()
+        {
+            velocity = new Vector2(0, 0);
+        }
+        public Rigidbody(Vector2 velocity)
+        {
+            this.velocity = velocity;
+        }
+    }
+
     public class GameObject
     {
         public ASCIISprite sprite { get; set; }
         public Transform transform { get; set; }
+        public Rigidbody rigidbody { get; set; }
         public Events events { get; }
         public string name { get; set; }
         public int? identifier { get; private set; }
@@ -22,8 +36,9 @@ namespace RetroEngine
         {
             sprite = new ASCIISprite();
             transform = new Transform();
+            rigidbody = new Rigidbody();
             events = new Events();
-            name = "gameobject";
+            name = "default name";
             identifier = null;
             activeSelf = true;
         }
@@ -31,27 +46,26 @@ namespace RetroEngine
         {
             this.sprite = sprite;
             transform = new Transform();
+            rigidbody = new Rigidbody();
             events = new Events();
-            name = "gameobject";
+            name = "default name";
             identifier = null;
             activeSelf = true;
         }
         public GameObject(Transform transform)
         {
             this.transform = transform;
+            rigidbody = new Rigidbody();
             sprite = new ASCIISprite();
             events = new Events();
-            name = "gameobject";
+            name = "default name";
             identifier = null;
             activeSelf = true;
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="gameObject"></param>
         public GameObject(GameObject gameObject)
         {
             this.sprite = gameObject.sprite;
+            this.rigidbody = gameObject.rigidbody;
             this.transform = gameObject.transform;
             this.events = gameObject.events;
             this.name = gameObject.name;
@@ -74,8 +88,8 @@ namespace RetroEngine
                 throw new Exceptions.GameObjectNotInstantiatedException();
             }
 
-            //System.Diagnostics.Debug.WriteLine("ID: " + identifier);
-            //System.Diagnostics.Debug.WriteLine("Objects: " + Game.Objects);
+            //Debug.Log("ID: " + identifier);
+            //Debug.Log("Objects: " + Game.Objects);
 
             return Game.Objects[(int)identifier];
         }
@@ -93,6 +107,7 @@ namespace RetroEngine
         {
             if (identifier == null)
             {
+                Debug.Log("Id is null of " + name);
                 return;
             }
 
@@ -148,20 +163,20 @@ namespace RetroEngine
         /// <summary>
         /// Instantiates GameObject.
         /// </summary>
-        /// <param name="obj">The GameObject to instantiate</param>
-        public static GameObject Instantiate(GameObject obj)
+        /// <param name="original">The GameObject to instantiate</param>
+        public static GameObject Instantiate(GameObject original)
         {
-            GameObject t = obj.Clone();
+            GameObject t = new GameObject(original);
             t.identifier = Game.Objects.Count;
 
             Game.Objects.Add(t);
             return t;
         }
-        public static GameObject Instantiate(GameObject obj, string name)
+        public static GameObject Instantiate(GameObject original, Vector2 position)
         {
-            GameObject t = obj.Clone();
+            GameObject t = new GameObject(original);
             t.identifier = Game.Objects.Count;
-            t.name = name;
+            t.transform.position = position;
 
             Game.Objects.Add(t);
             return t;
@@ -172,7 +187,9 @@ namespace RetroEngine
         /// </summary>
         /// <param name="name"></param>
         public static GameObject Find(string name) => Game.Objects.Where(i => i.name == name).FirstOrDefault();
-        
+
+        public override string ToString() => this.name;
+
         public class Events
         {
 #pragma warning disable 0649
@@ -204,6 +221,10 @@ namespace RetroEngine
     public class Transform
     {
         public Vector2 position { get; set; }
+        /// <summary>
+        /// The z_index represents the order in which the gameobject is drawn.
+        /// And if you remove the '_', it sounds like a toothpaste brand.
+        /// </summary>
         public int z_index { get; set; }
 
         public Transform()
@@ -226,6 +247,9 @@ namespace RetroEngine
         }
     }
 
+    /// <summary>
+    /// Holds ascii drawing that represents a game object.
+    /// </summary>
     public class ASCIISprite
     {
         public char[,] draw { get; set; }
@@ -319,160 +343,34 @@ namespace RetroEngine
             this.x = x;
             this.y = y;
         }
-
-        #region Readonly directions
+        
         /// <summary>
         /// Shorthand for writing Vector2(0, 0).
         /// </summary>
-        public static Vector2 zero
-        {
-            get
-            {
-                return new Vector2(0, 0);
-            }
-        }
-
-        public static Vector2 right
-        {
-            get
-            {
-                return new Vector2(1, 0);
-            }
-        }
-
-        public static Vector2 left
-        {
-            get
-            {
-                return new Vector2(-1, 0);
-            }
-        }
-
-        public static Vector2 up
-        {
-            get
-            {
-                return new Vector2(0, -1);
-            }
-        }
-
-        public static Vector2 down
-        {
-            get
-            {
-                return new Vector2(0, 1);
-            }
-        }
-        #endregion
-
-        /*
+        public static Vector2 zero { get; } = new Vector2(0, 0);
         /// <summary>
-        /// Returns downwards direction with <c>Settings.CoordinateSystemCenter</c> in mind.
+        /// Shorthand for writing Vector(1, 0).
         /// </summary>
-        public static Vector2 down()
-        {
-            switch (Settings.CoordinateSystemCenter)
-            {
-                case CoordinateSystemType.BottomRight:
-                case CoordinateSystemType.TopRight:
-                case CoordinateSystemType.TopLeft:
-                    return new Vector2(0, 1);
-
-                case CoordinateSystemType.BottomLeft:
-                case CoordinateSystemType.Middle:
-                    return new Vector2(0, -1);
-
-                default: //This won't happen
-                    return new Vector2();
-            }
-        }
-
+        public static Vector2 right { get; } = new Vector2(1, 0);
         /// <summary>
-        /// Returns upwards direction with <c>Settings.CoordinateSystemCenter</c> in mind.
+        /// Shorthand for writing Vector(-1, 0).
         /// </summary>
-        public static Vector2 up()
-        {
-            switch (Settings.CoordinateSystemCenter)
-            {
-                case CoordinateSystemType.BottomRight:
-                case CoordinateSystemType.TopRight:
-                case CoordinateSystemType.TopLeft:
-                    return new Vector2(0, -1);
-
-                case CoordinateSystemType.BottomLeft:
-                case CoordinateSystemType.Middle:
-                    return new Vector2(0, 1);
-
-                default: //This won't happen
-                    return new Vector2();
-            }
-        }
-
-
+        public static Vector2 left { get; } = new Vector2(-1, 0);
         /// <summary>
-        /// Returns upwards direction with <c>Settings.CoordinateSystemCenter</c> in mind.
+        /// Shorthand for writing Vector(0, -1).
         /// </summary>
-        public static Vector2 right()
-        {
-            switch (Settings.CoordinateSystemCenter)
-            {
-                case CoordinateSystemType.BottomRight:
-                case CoordinateSystemType.TopRight:
-                    return new Vector2(-1, 0);
-
-                case CoordinateSystemType.BottomLeft:
-                case CoordinateSystemType.TopLeft:
-                    return new Vector2(1, 0);
-
-                case CoordinateSystemType.Middle:
-                    return new Vector2(1, 0);
-
-                default: //This won't happen
-                    return new Vector2();
-            }
-        }
-
-
+        public static Vector2 up { get; } = new Vector2(0, -1);
         /// <summary>
-        /// Returns upwards direction with <c>Settings.CoordinateSystemCenter</c> in mind.
+        /// Shorthand for writing Vector(0, 1).
         /// </summary>
-        public static Vector2 left()
-        {
-            switch (Settings.CoordinateSystemCenter)
-            {
-                case CoordinateSystemType.BottomRight:
-                case CoordinateSystemType.TopRight:
-                    return new Vector2(1, 0);
-
-                case CoordinateSystemType.BottomLeft:
-                case CoordinateSystemType.TopLeft:
-                    return new Vector2(-1, 0);
-
-                case CoordinateSystemType.Middle:
-                    return new Vector2(-1, 0);
-
-                default: //This won't happen
-                    return new Vector2();
-            }
-        }*/
+        public static Vector2 down { get; } = new Vector2(0, 1);
 
         /// <summary>
-        /// Compares Vector2, same as using the '==' operator.
+        /// Compares this with another Vector2.
         /// </summary>
         public bool Equals(Vector2 vector2)
         {
             return GetHashCode() == vector2.GetHashCode();
-            /*
-            if (ReferenceEquals(null, vector2))
-            {
-                return false;
-            }
-            if (ReferenceEquals(this, vector2))
-            {
-                return true;
-            }
-
-            return x == vector2.x && y == vector2.y;*/
         }
         public override bool Equals(object obj)
         {
@@ -484,27 +382,33 @@ namespace RetroEngine
         }
 
         /// <summary>
-        /// Compares Vector2, rounded to nearest whole integer.
+        /// Compare this with another Vector2, with rounded numbers.
         /// </summary>
-        public bool EqualsInt(Vector2 vector2)
+        public bool EqualsRound(Vector2 vector2)
         {
             return (int)x == (int)vector2.x && (int)y == (int)vector2.y;
         }
 
-        public Vector2 Integer()
+        /// <summary>
+        /// Returns Vector2 with rounded numbers.
+        /// </summary>
+        /// <returns></returns>
+        public Vector2 Rounded()
         {
             return new Vector2((int)x, (int)y);
         }
 
         /// <summary>
-        /// Sets the x and y value with one call.
+        /// Set the x and y value.
         /// </summary>
         public void Set(float x, float y)
         {
             this.x = x;
             this.y = y;
         }
-
+        /// <summary>
+        /// Add to the x and y value.
+        /// </summary>
         public void Add(float x, float y)
         {
             this.x += x;
@@ -516,32 +420,67 @@ namespace RetroEngine
         {
             return $"({x.ToString(System.Globalization.CultureInfo.InvariantCulture)}, {y.ToString(System.Globalization.CultureInfo.InvariantCulture)})";
         }
-
+        public static bool operator ==(Vector2 a, Vector2 b)
+        {
+            return a.x == b.x && a.y == b.y;
+        }
+        public static bool operator !=(Vector2 a, Vector2 b)
+        {
+            return (int)a.x == (int)b.x && (int)a.y == (int)b.y;
+        }
         public static Vector2 operator +(Vector2 a, Vector2 b)
         {
-            return new Vector2(a.x + b.x, a.y + b.y);
+            a.x += b.x;
+            a.y += b.y;
+            return a;
+            //return new Vector2(a.x + b.x, a.y + b.y);
         }
-
+        public static Vector2 operator +(Vector2 a, float b)
+        {
+            a.x += b;
+            a.y += b;
+            return a;
+        }
         public static Vector2 operator -(Vector2 a, Vector2 b)
         {
-            return new Vector2(a.x - b.x, a.y - b.y);
+            a.x -= b.x;
+            a.y -= b.y;
+            return a;
+            //return new Vector2(a.x - b.x, a.y - b.y);
         }
-
         public static Vector2 operator *(float d, Vector2 a)
         {
-            return new Vector2(a.x * d, a.y * d);
+            a.x *= d;
+            a.y *= d;
+            return a;
+            //return new Vector2(a.x * d, a.y * d);
         }
         public static Vector2 operator *(Vector2 a, float d)
         {
-            return new Vector2(a.x * d, a.y * d);
+            a.x *= d;
+            a.y *= d;
+            return a;
+            //return new Vector2(a.x * d, a.y * d);
         }
         public static Vector2 operator *(decimal d, Vector2 a)
         {
-            return new Vector2(a.x * (float)d, a.y * (float)d);
+            a.x *= (float)d;
+            a.y *= (float)d;
+            return a;
+            //return new Vector2(a.x * (float)d, a.y * (float)d);
         }
         public static Vector2 operator *(Vector2 a, decimal d)
         {
-            return new Vector2(a.x * (float)d, a.y * (float)d);
+            a.x *= (float)d;
+            a.y *= (float)d;
+            return a;
+            //return new Vector2(a.x * (float)d, a.y * (float)d);
+        }
+        public static Vector2 operator *(Vector2 a, Vector2 b)
+        {
+            a.x *= b.x;
+            a.y *= b.y;
+            return a;
         }
     }
 
@@ -557,13 +496,19 @@ namespace RetroEngine
     public static class Settings
     {
         /// <summary>
+        /// WARNING: Isn't implemented yet, or will never be, up for debate.
         /// Defines the coordinate (0, 0) point.
         /// </summary>
         public static CoordinateSystemType CoordinateSystemCenter = CoordinateSystemType.TopLeft;
-        public static bool FPSCounter = true;
 
-        public static int GameSizeWidth { get; set; } = 100;
-        public static int GameSizeHeight { get; set; } = 50;
+        /// <summary>
+        /// Defines game boundaries and render size.
+        /// </summary>
+        public static int GameSizeWidth { get; set; } = 25;
+        /// <summary>
+        /// Defines game boundaries and render size.
+        /// </summary>
+        public static int GameSizeHeight { get; set; } = 10;
 
         /// <summary>
         /// Makes the grid in the console equal size.
@@ -571,6 +516,8 @@ namespace RetroEngine
         /// (A char placed in one cell is placed in 2 cells.)
         /// </summary>
         public static bool SquareMode { get; set; } = false;
+
+        public static int TargetFramesPerSecond { get; set; } = 60;
     }
 
     public static class Input
@@ -644,7 +591,9 @@ namespace RetroEngine
         /// </summary>
         /// <remarks>Objects must NOT be removed from this list, they should be nullified.</remarks>
         public static List<GameObject> Objects { get; } = new List<GameObject>();
+        public static char[,] Background { get; set; } = new char[Settings.GameSizeHeight, Settings.GameSizeWidth];
         public static Action UpdateMethod { get; set; }
+        public static Action FixedUpdateMethod { get; set; }
         public static Action StartMethod { get; set; }
         public static int TotalFrames { get; private set; }
         public static long GameStartedTimestamp { get; private set; }
@@ -652,12 +601,14 @@ namespace RetroEngine
         //private static Timer updateTimer;
         private static bool gamePlaying;
         //private static long previousFrameTimestamp = 0;
-        private static char[,] gamefield { get; set; } = new char[Settings.GameSizeHeight, Settings.GameSizeWidth];
-        private static char[,] gamefieldRendered { get; set; } = new char[Settings.GameSizeHeight, Settings.GameSizeWidth];
+        public static char[,] gamefield { get; set; } = new char[Settings.GameSizeHeight, Settings.GameSizeWidth];
+        private static char[,] renderedGamefield { get; set; } = new char[Settings.GameSizeHeight, Settings.GameSizeWidth];
+        //private static char[,] differentGamefield { get; set; } = new char[Settings.GameSizeHeight, Settings.GameSizeWidth];
         private static int?[,] collisionMap { get; set; } = new int?[Settings.GameSizeHeight, Settings.GameSizeWidth];
         private static int?[,] collisionMapRendered { get; set; } = new int?[Settings.GameSizeHeight, Settings.GameSizeWidth];
-        public static Tuple<bool, List<int>>[,] collidedMap { get; set; } = new Tuple<bool, List<int>>[Settings.GameSizeHeight, Settings.GameSizeWidth];
-        private static List<GameObject> previousFrameObjects = new List<GameObject>();
+        //public static Tuple<bool, List<int>>[,] collidedMap { get; set; } = new Tuple<bool, List<int>>[Settings.GameSizeHeight, Settings.GameSizeWidth];
+        private static List<GameObject> renderedObjects = new List<GameObject>();
+        private static long lastFixedFrame;
 
         public static void Exit() => gamePlaying = false;
 
@@ -667,6 +618,19 @@ namespace RetroEngine
             long currentTimestamp = Utility.TimeStamp();
             Console.CursorVisible = false;
             Input.ListenKeys();
+
+            if (Debug.DrawGameBorder)
+            {
+                for (int x = 0; x < Settings.GameSizeWidth; x++)
+                {
+                    Utility.SetPixel('-', x, Settings.GameSizeHeight);
+                }
+
+                for (int y = 0; y < Settings.GameSizeHeight; y++)
+                {
+                    Utility.SetPixel('|', Settings.GameSizeWidth, y);
+                }
+            }
 
             // External start method
             if (StartMethod != null)
@@ -682,8 +646,9 @@ namespace RetroEngine
 
             //previousFrameObjects = Objects;
             GameStartedTimestamp = Utility.TimeStamp();
+            lastFixedFrame = Utility.TimeStamp();
 
-            long previousFrameTimestamp = currentTimestamp;
+            long previousTimestamp = currentTimestamp;
             currentTimestamp = Utility.TimeStamp();
 
             gamePlaying = true;
@@ -691,17 +656,39 @@ namespace RetroEngine
             // Prevents window from closing
             while (gamePlaying)
             {
-
                 // Internal Update loop
-                previousFrameObjects = Objects;
-                gamefield = gamefieldRendered;
-                previousFrameTimestamp = currentTimestamp;
+                renderedObjects = Objects;
+                renderedGamefield = gamefield;
+                previousTimestamp = currentTimestamp;
                 currentTimestamp = Utility.TimeStamp();
+                gamefield = new char[Settings.GameSizeHeight, Settings.GameSizeWidth];
+                
 
-                float delta = currentTimestamp - previousFrameTimestamp;
+                float delta = currentTimestamp - previousTimestamp;
                 Time.deltaTime = delta != 0 ? delta / (float)1000 : 0;
 
-                if (Settings.FPSCounter)
+                if (currentTimestamp - lastFixedFrame >= (float)1000 / Settings.TargetFramesPerSecond)
+                {
+                    // Internal fixed update
+                    lastFixedFrame = currentTimestamp;
+
+                    foreach (GameObject item in Objects)
+                    {
+                        if (item == null || !item.activeSelf || item.identifier == null)
+                        {
+                            continue;
+                        }
+                        item.transform.position += item.rigidbody.velocity;
+                    }
+
+                    // External fixed update
+                    if (FixedUpdateMethod != null)
+                    {
+                        FixedUpdateMethod.Invoke();
+                    }
+                }
+
+                if (Debug.FPSCounter)
                 {
                     float FPS;
                     float timepassed;
@@ -743,7 +730,7 @@ namespace RetroEngine
 
         private static void HandleGameObject(GameObject obj)
         {
-            if (!obj.activeSelf || obj.sprite.draw == null)
+            if (obj == null || !obj.activeSelf || obj.sprite.draw == null)
             {
                 return;
             }
@@ -758,20 +745,14 @@ namespace RetroEngine
             {
                 return;
             }
-            //Vector2 position = obj.transform.position;
-            //char[][] sprite = obj.sprite.draw;
 
-            for (int loop_y = 0; loop_y < sprite.GetLength(0); loop_y++)
+            int spriteHeight = sprite.GetLength(0);
+            int spriteWidth = sprite.GetLength(1);
+            for (int loop_y = 0; loop_y < spriteHeight; loop_y++)
             {
-                for (int loop_x = 0; loop_x < sprite.GetLength(1); loop_x++)
+                for (int loop_x = 0; loop_x < spriteHeight; loop_x++)
                 {
                     SetCell(sprite[loop_y, loop_x], x + loop_x, y + loop_y);
-                    /*
-                    if (sprite[y][x] != ' ')
-                    {
-                        //Utility.SetPixel(sprite[y][x], (int)pos.x + x, (int)pos.y + y);
-                        SetCell(sprite[y][x], (int)pos.x + x, (int)pos.y + y);
-                    }*/
                 }
             }
         }
@@ -803,37 +784,37 @@ namespace RetroEngine
 
             if (collided)
             {
-                System.Diagnostics.Debug.WriteLine("Collided");
+                Debug.Log("Collided");
                 //Objects[identifier].events.OnCollisionEnter
             }
         }
 
         private static void CleanBuffered()
         {
-            //List<GameObject> objectsList = Objects;
-            for (int i = 0; i < Math.Min(previousFrameObjects.Count, Objects.Count); i++)
+            /*
+            for (int i = 0; i < Math.Min(renderedObjects.Count, Objects.Count); i++)
             {
-                //Debug.Log($"previus: {previousFrameObjects[i].transform.position}, now: {objectsList[i].transform.position}");
-                Debug.Log(previousFrameObjects[i].transform.position.x == Objects[i].transform.position.x && previousFrameObjects[i].transform.position.y == Objects[i].transform.position.y);
-                if (true)
+                if (renderedObjects[i].transform.position.Integer() != Objects[i].transform.position.Integer()) //TODO: Fix this
                 {
-                    //Debug.Log("Object is not equal to new transform");
-                    Vector2 position = Objects[i].transform.position;
-                    for (int y = 0; y < Objects[i].sprite.draw.GetLength(0); y++)
+                    Vector2 position = renderedObjects[i].transform.position;
+
+                    int spriteHeight = renderedObjects[i].sprite.draw.GetLength(0);
+                    int spriteWidth = renderedObjects[i].sprite.draw.GetLength(1);
+
+                    for (int y = 0; y < spriteHeight; y++)
                     {
-                        for (int x = 0; x < Objects[i].sprite.draw.GetLength(1); x++)
+                        for (int x = 0; x < spriteWidth; x++)
                         {
                             gamefield[(int)position.y + y, (int)position.x + x] = ' ';
                             //SetCell(' ', (int)position.x + x, (int)position.y + y);
                         }
                     }
                 }
-            }
+            }*/
         }
 
         private static void UpdateBuffer()
         {
-
             for (int y = 0; y < Settings.GameSizeHeight; y++)
             {
                 for (int x = 0; x < Settings.GameSizeWidth; x++)
@@ -855,7 +836,9 @@ namespace RetroEngine
             if (0 < x && x < Settings.GameSizeWidth &&
                 0 < y && y < Settings.GameSizeHeight)
             {
-                gamefield[y, x] = gamefieldRendered[y, x] == value ? '\0' : value;
+                //Debug.Log(gamefield[y, x] + " : " + gamefieldRendered[y, x]);
+                gamefield[y, x] = value;
+                //gamefield[y, x] = gamefieldRendered[y, x] == value ? '\0' : value;
             }
         }
         /// <summary>
@@ -887,7 +870,10 @@ namespace RetroEngine
         /// Currently affects performance massively.  For drawing coordinate system only once refer to DrawCoordinateSystem method.
         /// </summary>
         public static bool DrawCoordinateSystemEveryFrame { get; set; } = false;
-
+        /// <summary>
+        /// Window title is updated to current FPS.
+        /// </summary>
+        public static bool FPSCounter = true;
         /// <summary>
         /// The maximum width of coordinate system, setting the value to null results in max width being equal to Game.GameSizeWidth.
         /// </summary>
@@ -900,13 +886,18 @@ namespace RetroEngine
         /// The interval of numbers displayed on each axis.
         /// </summary>
         public static int CoordinateInterval { get; set; } = 5;
-
+        /// <summary>
+        /// Draws border around the game area.
+        /// </summary>
+        public static bool DrawGameBorder { get; set; } = false;
         /// <summary>
         /// Log mode, <code>Spool</code> to log the output to a file, <code>DebugIDE</code> to write to special IDE debugging channel.
         /// </summary>
-        public static logMode LogMode = logMode.DebugIDE;
+        public static logMode LogMode { get; set; } = logMode.StatusLog;
+        private static StreamWriter spoolWriter = null;
 
-        private static StreamWriter fs = null;
+        private enum logType { INFO, WARNING, ERROR, }
+        public enum logMode { Spool, DebugIDE, StatusLog }
 
         /// <summary>
         /// Draws coordinate system
@@ -937,7 +928,7 @@ namespace RetroEngine
         }
 
         /// <summary>
-        /// Logs a message to 'latest_log.txt'.
+        /// Logs a message to the current logging target defined by <code>LogMode</code>.
         /// </summary>
         public static void Log(object message)
         {
@@ -948,6 +939,9 @@ namespace RetroEngine
                     return;
                 case logMode.DebugIDE:
                     System.Diagnostics.Debug.WriteLine(message);
+                    return;
+                case logMode.StatusLog:
+                    Status.Log(message);
                     return;
             }
         }
@@ -961,6 +955,9 @@ namespace RetroEngine
                 case logMode.DebugIDE:
                     System.Diagnostics.Debug.WriteLine(message);
                     return;
+                case logMode.StatusLog:
+                    Status.LogError(message);
+                    return;
             }
         }
         public static void LogWarning(object message)
@@ -973,22 +970,20 @@ namespace RetroEngine
                 case logMode.DebugIDE:
                     System.Diagnostics.Debug.WriteLine(message);
                     return;
-                default:
-                    break;
+                case logMode.StatusLog:
+                    Status.LogWarning(message);
+                    return;
             }
         }
 
-        private enum logType { INFO, WARNING, ERROR, }
-        public enum logMode { Spool, DebugIDE }
-
         private static void write(object message, logType logType)
         {
-            if (fs == null)
+            if (spoolWriter == null)
             {
-                fs = initLog();
+                spoolWriter = initLog();
             }
 
-            fs.WriteLineAsync($"[{DateTime.Now.ToShortTimeString()}][{logType.ToString()}] " + message);
+            spoolWriter.WriteLineAsync($"[{DateTime.Now.ToShortTimeString()}][{logType.ToString()}] " + message);
         }
 
         private static StreamWriter initLog()
@@ -1002,6 +997,173 @@ namespace RetroEngine
             sw.WriteLine(Utility.TimeStamp());
             sw.WriteLine("\nLog initialized\n");
             return sw;
+        }
+
+        /// <summary>
+        /// Class for controlling the "Status" pane.
+        /// </summary>
+        public static class Status
+        {
+            /// <summary>
+            /// The offset of the status area on the X axis.
+            /// </summary>
+            public static int OffsetX = 1;
+            /// <summary>
+            /// The offset of the status area on the Y axis.
+            /// </summary>
+            public static int OffsetY = 1;
+            /// <summary>
+            /// Defines the max length of logs, 0 is no limit.
+            /// </summary>
+            public static int LogMaxLength { get; set; } = 9;
+            /// <summary>
+            /// The line indicator of the status area.
+            /// </summary>
+            public static char LogIndicator { get; set; } = '>';
+            public static char HierarchyIndicator { get; set; } = '§';
+            public static RelativePosition LoggingArea { get; set; } = RelativePosition.None;
+            public static RelativePosition HierarchyArea { get; set; } = RelativePosition.None;
+
+            private static int hierarchyAreaLongestLine = 0;
+            private static int loggingAreaLongest = 0;
+            private static int logLineCount = 0;
+            //private static List<string> logText { get; } = new List<string>();
+
+            public enum RelativePosition { Below, By, None }
+            
+
+            public static void UpdateHierarchy()
+            {
+                if (HierarchyArea == RelativePosition.None)
+                    return;
+                
+                for (int i = 0; i < Game.Objects.Count; i++)
+                {
+                    GameObject item = Game.Objects[i];
+                    string gameObjectString;
+                    if (item == null)
+                    {
+                        gameObjectString = "(destroyed)";
+                    }
+                    else
+                    {
+                        gameObjectString = $"({item.activeSelf}) {item.identifier}:{item.name} - {item.transform.position} - {item.rigidbody.velocity}";
+                    }
+
+                    hierarchyAreaLongestLine = Math.Max(hierarchyAreaLongestLine, gameObjectString.Length);
+                    
+                    WriteLine(gameObjectString + new string(' ', hierarchyAreaLongestLine - gameObjectString.Length), i, HierarchyArea, HierarchyIndicator);
+
+                    //WriteLine($"({item.activeSelf}) {item.identifier}:{item.name} - {item.transform.position} - {item.rigidbody.velocity}", i, HierarchyArea, HierarchyIndicator);
+                }
+            }
+            /*
+            public static void UpdateLog()
+            {
+                if (LoggingArea == RelativePosition.None)
+                    return;
+
+                logLineCount = 0;
+                for (int i = 0; i < logText.Count; i++)
+                {
+                    WriteLine(logText[i]);
+                }
+            }*/
+
+            private static void MoveLogs()
+            {
+                int sourceHeight = LogMaxLength == 0 ? logLineCount : Math.Min(LogMaxLength - 1, logLineCount);
+                
+                if (LoggingArea == RelativePosition.Below)
+                {
+                    Console.MoveBufferArea(OffsetX, Settings.GameSizeHeight + OffsetY, loggingAreaLongest + 1, sourceHeight, OffsetX, Settings.GameSizeHeight + OffsetY + 1);
+                }
+                else if (LoggingArea == RelativePosition.By)
+                {
+                    Console.MoveBufferArea(Settings.GameSizeWidth + OffsetX, OffsetY, loggingAreaLongest + 1, sourceHeight, Settings.GameSizeWidth + OffsetX, OffsetY + 1);
+                }
+            }
+
+            public static void Log(object message)
+            {
+                WriteLine(message);
+                loggingAreaLongest = Math.Max(loggingAreaLongest, message.ToString().Length);
+            }
+            public static void LogWarning(object message)
+            {
+                WriteLine(message.ToString(), ConsoleColor.Yellow);
+                loggingAreaLongest = Math.Max(loggingAreaLongest, message.ToString().Length);
+            }
+            public static void LogError(object message)
+            {
+                WriteLine(message.ToString(), ConsoleColor.Red);
+                loggingAreaLongest = Math.Max(loggingAreaLongest, message.ToString().Length);
+            }
+
+            private static void SetCurrentLine(int lineIndex) => logLineCount = lineIndex;
+
+            private static void WriteLine(object value)
+            {
+                if (LoggingArea == RelativePosition.None)
+                    return;
+
+                MoveLogs();
+
+                if (LoggingArea == RelativePosition.By)
+                {
+                    Console.SetCursorPosition(Settings.GameSizeWidth + OffsetX, OffsetY);// + currentLogLine);
+                }
+                else if (LoggingArea == RelativePosition.Below)
+                {
+                    Console.SetCursorPosition(OffsetX, Settings.GameSizeHeight + OffsetY);// + currentLogLine);
+                }
+
+                Console.Write(LogIndicator);
+                Console.Write(value);
+                logLineCount++;
+            }
+
+            private static void WriteLine(object value, int line, RelativePosition area, char lineIndicator)
+            {
+                if (area == RelativePosition.None)
+                    return;
+
+                if (area == RelativePosition.By)
+                {
+                    Console.SetCursorPosition(Settings.GameSizeWidth + OffsetX, line + OffsetY);
+                }
+                else if (area == RelativePosition.Below)
+                {
+                    Console.SetCursorPosition(OffsetX, Settings.GameSizeHeight + OffsetY + line);
+                }
+                Console.Write(lineIndicator);
+                Console.Write(value);
+            }
+
+            private static void WriteLine(object value, ConsoleColor textColor)
+            {
+                if (LoggingArea == RelativePosition.None)
+                    return;
+
+                MoveLogs();
+
+                if (LoggingArea == RelativePosition.By)
+                {
+                    Console.SetCursorPosition(Settings.GameSizeWidth + OffsetX, OffsetY);
+                }
+                else if (LoggingArea == RelativePosition.Below)
+                {
+                    Console.SetCursorPosition(OffsetX, Settings.GameSizeHeight + OffsetY);
+                }
+
+                Console.Write(LogIndicator);
+
+                ConsoleColor defaultColor = Console.ForegroundColor;
+                Console.ForegroundColor = textColor;
+                Console.Write(value);
+                Console.ForegroundColor = defaultColor;
+                logLineCount++;
+            }
         }
     }
 
@@ -1017,7 +1179,33 @@ namespace RetroEngine
 
     }
 
-    public static class Utility
+    public static class Exceptions
+    {
+        public class GameObjectNotInstantiatedException : Exception
+        {
+            public GameObjectNotInstantiatedException()
+            {
+            }
+
+            public GameObjectNotInstantiatedException(string message) : base(message)
+            {
+            }
+        }
+
+        public class HeightOrWidthLessThanOrEqualToZeroException : Exception
+        {
+            public HeightOrWidthLessThanOrEqualToZeroException()
+            {
+            }
+
+            public HeightOrWidthLessThanOrEqualToZeroException(string message) : base(message)
+            {
+            }
+        }
+    }
+
+
+    internal static class Utility
     {
         public static void SetPixel(string value, int x, int y)
         {
@@ -1061,18 +1249,6 @@ namespace RetroEngine
         /// </summary>
         public static long TimeStamp() => DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-        /*
-        /// <summary>
-        /// Gets all gameobjects that are static
-        /// </summary>
-        /// <returns></returns>
-        public static List<GameObject> GetGameObjects()
-        {
-            List<GameObject> list = new List<GameObject>();
-            list.AddRange(Game.Objects);
-            return list;
-        }*/
-
         /// <summary>
         /// Sorts and removes disabled objects.
         /// </summary>
@@ -1087,33 +1263,99 @@ namespace RetroEngine
         }
     }
 
-    public static class Exceptions
-    {
-        public class GameObjectNotInstantiatedException : Exception
-        {
-            public GameObjectNotInstantiatedException()
-            {
-            }
-
-            public GameObjectNotInstantiatedException(string message) : base(message)
-            {
-            }
-        }
-
-        public class HeightOrWidthLessThanOrEqualToZeroException : Exception
-        {
-            public HeightOrWidthLessThanOrEqualToZeroException()
-            {
-            }
-
-            public HeightOrWidthLessThanOrEqualToZeroException(string message) : base(message)
-            {
-            }
-        }
-    }
-
 }
 
+
+/*
+/// <summary>
+/// Returns downwards direction with <c>Settings.CoordinateSystemCenter</c> in mind.
+/// </summary>
+public static Vector2 down()
+{
+    switch (Settings.CoordinateSystemCenter)
+    {
+        case CoordinateSystemType.BottomRight:
+        case CoordinateSystemType.TopRight:
+        case CoordinateSystemType.TopLeft:
+            return new Vector2(0, 1);
+
+        case CoordinateSystemType.BottomLeft:
+        case CoordinateSystemType.Middle:
+            return new Vector2(0, -1);
+
+        default: //This won't happen
+            return new Vector2();
+    }
+}
+
+/// <summary>
+/// Returns upwards direction with <c>Settings.CoordinateSystemCenter</c> in mind.
+/// </summary>
+public static Vector2 up()
+{
+    switch (Settings.CoordinateSystemCenter)
+    {
+        case CoordinateSystemType.BottomRight:
+        case CoordinateSystemType.TopRight:
+        case CoordinateSystemType.TopLeft:
+            return new Vector2(0, -1);
+
+        case CoordinateSystemType.BottomLeft:
+        case CoordinateSystemType.Middle:
+            return new Vector2(0, 1);
+
+        default: //This won't happen
+            return new Vector2();
+    }
+}
+
+
+/// <summary>
+/// Returns upwards direction with <c>Settings.CoordinateSystemCenter</c> in mind.
+/// </summary>
+public static Vector2 right()
+{
+    switch (Settings.CoordinateSystemCenter)
+    {
+        case CoordinateSystemType.BottomRight:
+        case CoordinateSystemType.TopRight:
+            return new Vector2(-1, 0);
+
+        case CoordinateSystemType.BottomLeft:
+        case CoordinateSystemType.TopLeft:
+            return new Vector2(1, 0);
+
+        case CoordinateSystemType.Middle:
+            return new Vector2(1, 0);
+
+        default: //This won't happen
+            return new Vector2();
+    }
+}
+
+
+/// <summary>
+/// Returns upwards direction with <c>Settings.CoordinateSystemCenter</c> in mind.
+/// </summary>
+public static Vector2 left()
+{
+    switch (Settings.CoordinateSystemCenter)
+    {
+        case CoordinateSystemType.BottomRight:
+        case CoordinateSystemType.TopRight:
+            return new Vector2(1, 0);
+
+        case CoordinateSystemType.BottomLeft:
+        case CoordinateSystemType.TopLeft:
+            return new Vector2(-1, 0);
+
+        case CoordinateSystemType.Middle:
+            return new Vector2(-1, 0);
+
+        default: //This won't happen
+            return new Vector2();
+    }
+}*/
 
 #region Timer
 /*

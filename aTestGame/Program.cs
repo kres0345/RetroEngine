@@ -11,6 +11,18 @@ namespace aTestGame
             Game.StartMethod = Start;
             Game.UpdateMethod = Update;
 
+            Debug.DrawGameBorder = true;
+            Debug.Status.HierarchyArea = Debug.Status.RelativePosition.Below;
+            Debug.Status.LoggingArea = Debug.Status.RelativePosition.By;
+
+            for (int y = 0; y < Game.Background.GetLength(0); y++)
+            {
+                for (int x = 0; x < Game.Background.GetLength(1); x++)
+                {
+                    Game.Background[y, x] = ' ';
+                }
+            }
+
             // Starts game
             Game.Play();
         }
@@ -19,7 +31,7 @@ namespace aTestGame
         public static GameObject bulletobj;
 
         static float PlayerSpeed = 1;
-        static float BulletSpeed = 0.5f;
+        static float BulletSpeed = 0.2f;
 
         readonly static char[,] Player1 = new char[,]
         {
@@ -29,7 +41,7 @@ namespace aTestGame
         };
         readonly static char[,] Bullet = new char[,]
         {
-            { '=', '=', '>' }
+            { '=', '>', '>', '>', '<' }
         };
 
         static void Start()
@@ -44,54 +56,75 @@ namespace aTestGame
             bulletobj = new GameObject();
             bulletobj.sprite.draw = Bullet;
             bulletobj.sprite.collision = ASCIISprite.GenerateCollision(bulletobj.sprite.draw);
-            bulletobj.SetActive(false);
+            bulletobj.name = "Bullet";
 
             player1obj = GameObject.Instantiate(player1obj);
-            bulletobj = GameObject.Instantiate(bulletobj);
-            //Game.Objects.Add("Bullet", bulletobj);
+            //bulletobj = GameObject.Instantiate(bulletobj);
+            
         }
 
         // Called every frame update
         static void Update()
         {
-
+            /*
             if (bulletobj.activeSelf)
             {
                 bulletobj.transform.position = new Vector2(bulletobj.transform.position.x + BulletSpeed, bulletobj.transform.position.y);
-            }
+            }*/
 
             if (Input.GetKey(ConsoleKey.D))
             {
                 player1obj.transform.position = new Vector2(player1obj.transform.position.x + (1 * PlayerSpeed), player1obj.transform.position.y);
+                Debug.Status.UpdateHierarchy();
+                Debug.Status.Log("Pressed D");
             }
             else if (Input.GetKey(ConsoleKey.W))
             {
                 player1obj.transform.position = new Vector2(player1obj.transform.position.x, player1obj.transform.position.y - (1 * PlayerSpeed));
+                Debug.Status.UpdateHierarchy();
+                Debug.Status.LogWarning("Pressed W");
             }
             else if (Input.GetKey(ConsoleKey.S))
             {
                 player1obj.transform.position = new Vector2(player1obj.transform.position.x, player1obj.transform.position.y + (1 * PlayerSpeed));
+                Debug.Status.UpdateHierarchy();
             }
             else if (Input.GetKey(ConsoleKey.A))
             {
                 player1obj.transform.position = new Vector2(player1obj.transform.position.x - (1 * PlayerSpeed), player1obj.transform.position.y);
+                Debug.Status.UpdateHierarchy();
             }
             else if (Input.GetKey(ConsoleKey.Spacebar))
             {
+                //Debug.Log("Space pressed");
+                Debug.Status.Log("Space presssed");
+                GameObject newBullet = bulletobj.Clone();
+                newBullet = GameObject.Instantiate(bulletobj);
+                newBullet.transform.position = player1obj.transform.position;
+                newBullet.rigidbody.velocity = new Vector2(BulletSpeed, 0);
+                newBullet.Update();
+                GameObject.Destroy(newBullet, 2);
+                /*
                 bulletobj.transform.position = new Vector2(player1obj.transform.position.x + 1, player1obj.transform.position.y + 1);
                 //bullet.transform.position.Add(player1.sprite.width, 0);
                 bulletobj.SetActive(true);
+                bulletobj.transform.rigidbody.velocity = new Vector2(BulletSpeed, 0);*/
             }
             else if (Input.GetKey(ConsoleKey.Backspace))
             {
-                bulletobj.SetActive(false);
+                //bulletobj.transform.rigidbody.velocity = new Vector2();
+                //bulletobj.SetActive(false);
             }
             else if (Input.GetKey(ConsoleKey.Escape))
             {
                 Game.Exit();
             }
+            else if (Input.GetKey(ConsoleKey.OemPeriod))
+            {
 
-            bulletobj.Update();
+            }
+
+            //bulletobj.Update();
             player1obj.Update();
 
         }
