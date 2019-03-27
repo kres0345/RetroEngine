@@ -12,14 +12,21 @@ namespace aTestGame
             Game.UpdateMethod = Update;
 
             Debug.DrawGameBorder = true;
-            Debug.Status.HierarchyArea = Debug.Status.RelativePosition.Below;
-            Debug.Status.LoggingArea = Debug.Status.RelativePosition.By;
+            Debug.Status.HierarchyArea = Debug.Status.RelativePosition.By;
+            Debug.Status.LoggingArea = Debug.Status.RelativePosition.Below;
+            Debug.Status.LogMaxLength = 8;
 
+            Settings.GameSizeHeight = 30;
+            Settings.GameSizeWidth = 120;
+
+            Debug.Status.hierarchyFrameUpdate = true;
+
+            
             for (int y = 0; y < Game.Background.GetLength(0); y++)
             {
                 for (int x = 0; x < Game.Background.GetLength(1); x++)
                 {
-                    Game.Background[y, x] = ' ';
+                    Game.Background[y, x] = '*';
                 }
             }
 
@@ -27,38 +34,43 @@ namespace aTestGame
             Game.Play();
         }
 
-        public static GameObject player1obj;
-        public static GameObject bulletobj;
+        public static GameObject player1GameObject;
+        public static GameObject bulletPrefab;
 
         static float PlayerSpeed = 1;
         static float BulletSpeed = 0.2f;
 
-        readonly static char[,] Player1 = new char[,]
+        readonly static char[,] PlayerSprite = new char[,]
         {
             { '{', '0', '}' },
             { '{', '+', '}' },
             { '{', '0', '}' }
         };
-        readonly static char[,] Bullet = new char[,]
+        readonly static char[,] BulletSprite = new char[,]
         {
-            { '=', '>', '>', '>', '<' }
+            { '=', '=', '>' }
+        };
+        readonly static char[,] SquareSprite = new char[,]
+        {
+            { '#', '#' },
+            { '#', '#' }
         };
 
         static void Start()
         {
             //GameObject obj = new GameObject();
-            player1obj = new GameObject();
-            player1obj.transform.position = new Vector2(3, 3);
-            player1obj.sprite.draw = Player1;
-            player1obj.sprite.collision = ASCIISprite.GenerateCollision(player1obj.sprite.draw);
+            player1GameObject = new GameObject();
+            player1GameObject.transform.position = new Vector2(3, 3);
+            player1GameObject.sprite.ascii = PlayerSprite;
+            player1GameObject.sprite.collision = ASCIISprite.GenerateCollision(player1GameObject.sprite.ascii);
 
             //Game.Objects.Add("Player1", player1obj);
-            bulletobj = new GameObject();
-            bulletobj.sprite.draw = Bullet;
-            bulletobj.sprite.collision = ASCIISprite.GenerateCollision(bulletobj.sprite.draw);
-            bulletobj.name = "Bullet";
+            bulletPrefab = new GameObject();
+            bulletPrefab.sprite.ascii = BulletSprite;
+            //bulletPrefab.sprite.collision = ASCIISprite.GenerateCollision(bulletPrefab.sprite.draw);
+            bulletPrefab.name = "Bullet";
 
-            player1obj = GameObject.Instantiate(player1obj);
+            player1GameObject = GameObject.Instantiate(player1GameObject);
             //bulletobj = GameObject.Instantiate(bulletobj);
             
         }
@@ -72,61 +84,72 @@ namespace aTestGame
                 bulletobj.transform.position = new Vector2(bulletobj.transform.position.x + BulletSpeed, bulletobj.transform.position.y);
             }*/
 
+            bool changed = false;
+
             if (Input.GetKey(ConsoleKey.D))
             {
-                player1obj.transform.position = new Vector2(player1obj.transform.position.x + (1 * PlayerSpeed), player1obj.transform.position.y);
-                Debug.Status.UpdateHierarchy();
-                Debug.Status.Log("Pressed D");
+                player1GameObject.transform.position = new Vector2(player1GameObject.transform.position.x + (1 * PlayerSpeed), player1GameObject.transform.position.y);
+
+                changed = true;
             }
             else if (Input.GetKey(ConsoleKey.W))
             {
-                player1obj.transform.position = new Vector2(player1obj.transform.position.x, player1obj.transform.position.y - (1 * PlayerSpeed));
-                Debug.Status.UpdateHierarchy();
-                Debug.Status.LogWarning("Pressed W");
+                player1GameObject.transform.position = new Vector2(player1GameObject.transform.position.x, player1GameObject.transform.position.y - (1 * PlayerSpeed));
+
+                changed = true;
             }
             else if (Input.GetKey(ConsoleKey.S))
             {
-                player1obj.transform.position = new Vector2(player1obj.transform.position.x, player1obj.transform.position.y + (1 * PlayerSpeed));
-                Debug.Status.UpdateHierarchy();
+                player1GameObject.transform.position = new Vector2(player1GameObject.transform.position.x, player1GameObject.transform.position.y + (1 * PlayerSpeed));
+
+                changed = true;
             }
             else if (Input.GetKey(ConsoleKey.A))
             {
-                player1obj.transform.position = new Vector2(player1obj.transform.position.x - (1 * PlayerSpeed), player1obj.transform.position.y);
-                Debug.Status.UpdateHierarchy();
+                player1GameObject.transform.position = new Vector2(player1GameObject.transform.position.x - (1 * PlayerSpeed), player1GameObject.transform.position.y);
+
+                changed = true;
             }
             else if (Input.GetKey(ConsoleKey.Spacebar))
             {
-                //Debug.Log("Space pressed");
-                Debug.Status.Log("Space presssed");
-                GameObject newBullet = bulletobj.Clone();
-                newBullet = GameObject.Instantiate(bulletobj);
-                newBullet.transform.position = player1obj.transform.position;
+
+                //GameObject newBullet = bulletobj.Clone();
+                GameObject newBullet = GameObject.Instantiate(bulletPrefab.Clone());
+
+                newBullet.transform.position = player1GameObject.transform.position + new Vector2(0, 1);
                 newBullet.rigidbody.velocity = new Vector2(BulletSpeed, 0);
                 newBullet.Update();
+
                 GameObject.Destroy(newBullet, 2);
+
                 /*
                 bulletobj.transform.position = new Vector2(player1obj.transform.position.x + 1, player1obj.transform.position.y + 1);
                 //bullet.transform.position.Add(player1.sprite.width, 0);
                 bulletobj.SetActive(true);
-                bulletobj.transform.rigidbody.velocity = new Vector2(BulletSpeed, 0);*/
-            }
-            else if (Input.GetKey(ConsoleKey.Backspace))
-            {
-                //bulletobj.transform.rigidbody.velocity = new Vector2();
-                //bulletobj.SetActive(false);
+                bulletobj.transform.rigidbody.velocity = new Vector2(BulletSpeed, 0);
+                */
+                Debug.Log("Fired weapon..");
             }
             else if (Input.GetKey(ConsoleKey.Escape))
             {
                 Game.Exit();
             }
-            else if (Input.GetKey(ConsoleKey.OemPeriod))
+            else if (Input.GetKey(ConsoleKey.D1))
             {
-
+                bulletPrefab.sprite.ascii = BulletSprite;
+                Debug.LogWarning("Selected [Bullet]");
+            }
+            else if (Input.GetKey(ConsoleKey.D2))
+            {
+                bulletPrefab.sprite.ascii = SquareSprite;
+                Debug.LogWarning("Selected [Square]");
             }
 
             //bulletobj.Update();
-            player1obj.Update();
-
+            if (changed)
+            {
+                player1GameObject.Update();
+            }
         }
     }
 }

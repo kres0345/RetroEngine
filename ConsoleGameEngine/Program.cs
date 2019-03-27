@@ -243,7 +243,7 @@ namespace RetroEngine
         /// </summary>
         public void Translate(Vector2 translation)
         {
-            position += translation;
+            position = position + translation;
         }
     }
 
@@ -252,7 +252,7 @@ namespace RetroEngine
     /// </summary>
     public class ASCIISprite
     {
-        public char[,] draw { get; set; }
+        public char[,] ascii { get; set; }
         public bool[,] collision { get; set; }
         public bool solid { get; set; }
 
@@ -263,22 +263,22 @@ namespace RetroEngine
         public ASCIISprite(char[,] draw)
         {
             this.solid = true;
-            this.draw = draw;
+            this.ascii = draw;
         }
         public ASCIISprite(char[,] draw, bool[,] collision)
         {
-            this.draw = draw;
+            this.ascii = draw;
             this.collision = collision;
         }
 
         /// <summary>
         /// Returns width of GameObject.
         /// </summary>
-        public int width() => draw.GetLength(1);
+        public int width() => ascii.GetLength(1);
         /// <summary>
         /// Returns height of GameObject.
         /// </summary>
-        public int height() => draw.GetLength(0);
+        public int height() => ascii.GetLength(0);
 
         /// <summary>
         /// Generates collision based on char array.
@@ -619,6 +619,19 @@ namespace RetroEngine
             Console.CursorVisible = false;
             Input.ListenKeys();
 
+            int WidthOffset = 5;
+            int HeightOffset = 5;
+            if (Debug.Status.HierarchyArea == Debug.Status.RelativePosition.By || Debug.Status.LoggingArea == Debug.Status.RelativePosition.By)
+            {
+                WidthOffset = 45;
+            }
+            if (Debug.Status.HierarchyArea == Debug.Status.RelativePosition.Below || Debug.Status.LoggingArea == Debug.Status.RelativePosition.Below)
+            {
+                HeightOffset = 10;
+            }
+
+            Console.SetWindowSize(Settings.GameSizeWidth + WidthOffset, Settings.GameSizeHeight + HeightOffset);
+
             if (Debug.DrawGameBorder)
             {
                 for (int x = 0; x < Settings.GameSizeWidth; x++)
@@ -632,6 +645,9 @@ namespace RetroEngine
                 }
             }
 
+
+            //UpdateWallpaper();
+
             // External start method
             if (StartMethod != null)
             {
@@ -639,9 +655,9 @@ namespace RetroEngine
             }
 
             // Draw gameobjects
-            foreach (GameObject obj in Utility.SortGameObjects(Objects))
+            for (int i = 0; i < Objects.Count; i++)
             {
-                HandleGameObject(obj);
+                HandleGameObject(Objects[i]);
             }
 
             //previousFrameObjects = Objects;
@@ -667,29 +683,9 @@ namespace RetroEngine
                 float delta = currentTimestamp - previousTimestamp;
                 Time.deltaTime = delta != 0 ? delta / (float)1000 : 0;
 
-                if (currentTimestamp - lastFixedFrame >= (float)1000 / Settings.TargetFramesPerSecond)
-                {
-                    // Internal fixed update
-                    lastFixedFrame = currentTimestamp;
-
-                    foreach (GameObject item in Objects)
-                    {
-                        if (item == null || !item.activeSelf || item.identifier == null)
-                        {
-                            continue;
-                        }
-                        item.transform.position += item.rigidbody.velocity;
-                    }
-
-                    // External fixed update
-                    if (FixedUpdateMethod != null)
-                    {
-                        FixedUpdateMethod.Invoke();
-                    }
-                }
-
                 if (Debug.FPSCounter)
                 {
+                    //TODO: Replace try-catch with if-statement for performance.
                     float FPS;
                     float timepassed;
                     try
@@ -703,19 +699,50 @@ namespace RetroEngine
                 }
 
                 if (Debug.DrawCoordinateSystemEveryFrame)
-                    Debug.DrawCoordinateSystem();
-
-                // Draw gameobjects
-                //collisionMap = new int?[GameSizeHeight, GameSizeWidth];
-
-                //gamefield = new char[GameSizeHeight, GameSizeWidth];
-                //gamefieldRendered = new char[GameSizeHeight, GameSizeWidth];
-                foreach (GameObject obj in Utility.SortGameObjects(Objects))
                 {
-                    HandleGameObject(obj);
+                    Debug.DrawCoordinateSystem();
                 }
 
-                CleanBuffered();
+                if (currentTimestamp - lastFixedFrame >= (float)1000 / Settings.TargetFramesPerSecond)
+                {
+                    // Internal fixed update
+                    lastFixedFrame = currentTimestamp;
+
+                    if (Debug.Status.hierarchyFrameUpdate)
+                    {
+                        Debug.Status.UpdateHierarchy();
+                    }
+
+                    for (int i = 0; i < Objects.Count; i++)
+                    {
+                        if (Objects[i] == null || !Objects[i].activeSelf || Objects[i].identifier == null)
+                        {
+                            continue;
+                        }
+                        Objects[i].transform.position += Objects[i].rigidbody.velocity;
+                    }
+
+                    // External fixed update
+                    if (FixedUpdateMethod != null)
+                    {
+                        FixedUpdateMethod.Invoke();
+                    }
+
+                    if (Debug.Status.hierarchyFrameUpdate)
+                    {
+                        Debug.Status.UpdateHierarchy();
+                    }
+                }
+
+
+                //UpdateWallpaper();
+                
+                // Draws and handles collisions of gameobjects.
+                for (int i = 0; i < Objects.Count; i++)
+                {
+                    HandleGameObject(Objects[i]);
+                }
+
                 UpdateBuffer();
 
                 // External update loop
@@ -730,13 +757,13 @@ namespace RetroEngine
 
         private static void HandleGameObject(GameObject obj)
         {
-            if (obj == null || !obj.activeSelf || obj.sprite.draw == null)
+            if (obj == null || !obj.activeSelf || obj.sprite.ascii == null)
             {
                 return;
             }
 
             //HandleCollisions(obj.sprite.collision, obj.transform.position, (int)obj.identifier);
-            PlaceCharArray(obj.sprite.draw, (int)obj.transform.position.x, (int)obj.transform.position.y);
+            PlaceCharArray(obj.sprite.ascii, (int)obj.transform.position.x, (int)obj.transform.position.y);
         }
 
         private static void PlaceCharArray(char[,] sprite, int x, int y)
@@ -788,10 +815,10 @@ namespace RetroEngine
                 //Objects[identifier].events.OnCollisionEnter
             }
         }
-
+        /*
         private static void CleanBuffered()
         {
-            /*
+            
             for (int i = 0; i < Math.Min(renderedObjects.Count, Objects.Count); i++)
             {
                 if (renderedObjects[i].transform.position.Integer() != Objects[i].transform.position.Integer()) //TODO: Fix this
@@ -810,7 +837,43 @@ namespace RetroEngine
                         }
                     }
                 }
-            }*/
+            }
+        }*/
+
+        private static void UpdateWallpaper()
+        {
+            bool[,] updateMap = new bool[Settings.GameSizeHeight, Settings.GameSizeWidth];
+
+            List<GameObject> sortedGameobjects = Objects;
+            sortedGameobjects.RemoveAll(obj => obj.activeSelf);
+
+            for (int i = 0; i < sortedGameobjects.Count; i++)
+            {
+                char[,] draw = sortedGameobjects[i].sprite.ascii;
+                Vector2 position = sortedGameobjects[i].transform.position;
+
+                for (int y = 0; y < draw.GetLength(0); y++)
+                {
+                    for (int x = 0; x < draw.GetLength(1); x++)
+                    {
+                        updateMap[(int)position.y + y, (int)position.x + x] = true;
+                    }
+                }
+            }
+
+            for (int y = 0; y < updateMap.GetLength(0); y++)
+            {
+                for (int x = 0; x < updateMap.GetLength(1); x++)
+                {
+                    if (updateMap[y, x])
+                        continue;
+
+                    if (gamefield[y, x] != Background[y, x] && Background[y, x] != '\0')
+                    {
+                        gamefield[y, x] = Background[y, x];
+                    }
+                }
+            }
         }
 
         private static void UpdateBuffer()
@@ -1023,6 +1086,7 @@ namespace RetroEngine
             public static char HierarchyIndicator { get; set; } = '§';
             public static RelativePosition LoggingArea { get; set; } = RelativePosition.None;
             public static RelativePosition HierarchyArea { get; set; } = RelativePosition.None;
+            public static bool hierarchyFrameUpdate { get; set; } = false;
 
             private static int hierarchyAreaLongestLine = 0;
             private static int loggingAreaLongest = 0;
@@ -1043,17 +1107,19 @@ namespace RetroEngine
                     string gameObjectString;
                     if (item == null)
                     {
-                        gameObjectString = "(destroyed)";
+                        gameObjectString = i + "(destroyed)";
+                        //continue;
                     }
                     else
                     {
-                        gameObjectString = $"({item.activeSelf}) {item.identifier}:{item.name} - {item.transform.position} - {item.rigidbody.velocity}";
+                        gameObjectString = $"{i}({item.activeSelf}):{item.name} - {item.transform.position} - {item.rigidbody.velocity}";
                     }
 
                     hierarchyAreaLongestLine = Math.Max(hierarchyAreaLongestLine, gameObjectString.Length);
                     
                     WriteLine(gameObjectString + new string(' ', hierarchyAreaLongestLine - gameObjectString.Length), i, HierarchyArea, HierarchyIndicator);
 
+                    //Console.WindowTop = 0;
                     //WriteLine($"({item.activeSelf}) {item.identifier}:{item.name} - {item.transform.position} - {item.rigidbody.velocity}", i, HierarchyArea, HierarchyIndicator);
                 }
             }
@@ -1249,17 +1315,19 @@ namespace RetroEngine
         /// </summary>
         public static long TimeStamp() => DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-        /// <summary>
-        /// Sorts and removes disabled objects.
-        /// </summary>
-        /// <param name="list"></param>
-        /// <returns></returns>
-        public static List<GameObject> SortGameObjects(List<GameObject> list)
+        public static void FillPopulatedCells(char[,] matrix, char[,] replaceMatrix, char fill = ' ')
         {
-            return list;
-            //list.RemoveAll(a => !a.activeSelf);
-            //list.RemoveAll(a => a == null);
-            //return list.OrderBy(o => o.transform.z_index).ToList();
+            /*
+            for (int y = 0; y < matrix.GetLength(0); y++)
+            {
+                for (int x = 0; x < matrix.GetLength(1); x++)
+                {
+                    if (matrix[y, x] != replaceMatrix[y, x] && matrix[y, x] != '\0')
+                    {
+                        matrix[y, x] = replaceMatrix[y, x];
+                    }
+                }
+            }*/
         }
     }
 
