@@ -3,7 +3,8 @@ using RetroEngine;
 
 namespace aTestGame
 {
-    class Program
+    //Note: class- and filename is unimportant
+    class GameScript
     {
         static void Main(string[] args)
         {
@@ -16,12 +17,12 @@ namespace aTestGame
             Debug.Status.LoggingArea = Debug.Status.RelativePosition.Below;
             Debug.Status.LogMaxLength = 8;
 
-            Settings.GameSizeHeight = 30;
-            Settings.GameSizeWidth = 120;
+            Settings.SizeHeight = 30;
+            Settings.SizeWidth = 120;
 
             Debug.Status.hierarchyFrameUpdate = true;
 
-            
+
             for (int y = 0; y < Game.Background.GetLength(0); y++)
             {
                 for (int x = 0; x < Game.Background.GetLength(1); x++)
@@ -72,7 +73,7 @@ namespace aTestGame
 
             player1GameObject = GameObject.Instantiate(player1GameObject);
             //bulletobj = GameObject.Instantiate(bulletobj);
-            
+
         }
 
         // Called every frame update
@@ -117,7 +118,8 @@ namespace aTestGame
                 GameObject newBullet = GameObject.Instantiate(bulletPrefab.Clone());
 
                 newBullet.transform.position = player1GameObject.transform.position + new Vector2(0, 1);
-                newBullet.rigidbody.velocity = new Vector2(BulletSpeed, 0);
+                newBullet.rigidbody.velocity = new Vector2(BulletSpeed, -0.1f);
+                newBullet.events.OnCollisionStay = new Action<int>(BulletOnCollisionStay);
                 newBullet.Update();
 
                 GameObject.Destroy(newBullet, 2);
@@ -150,6 +152,11 @@ namespace aTestGame
             {
                 player1GameObject.Update();
             }
+        }
+
+		public static void BulletOnCollisionStay(int collider_identifier)
+        {
+
         }
     }
 }
