@@ -22,14 +22,14 @@ namespace aTestGame
 
             Debug.Status.hierarchyFrameUpdate = true;
 
-
+            /*
             for (int y = 0; y < Game.Background.GetLength(0); y++)
             {
                 for (int x = 0; x < Game.Background.GetLength(1); x++)
                 {
                     Game.Background[y, x] = '*';
                 }
-            }
+            }*/
 
             // Starts game
             Game.Play();
@@ -37,9 +37,10 @@ namespace aTestGame
 
         public static GameObject player1GameObject;
         public static GameObject bulletPrefab;
+        public static GameObject wallGameObject;
 
         static float PlayerSpeed = 1;
-        static float BulletSpeed = 0.2f;
+        static float BulletSpeed = 0.9f;
 
         readonly static char[,] PlayerSprite = new char[,]
         {
@@ -56,6 +57,13 @@ namespace aTestGame
             { '#', '#' },
             { '#', '#' }
         };
+        readonly static char[,] WallSprite = new char[,]
+        {
+            { '#' },
+            { '#' },
+            { '#' },
+            { '#' }
+        };
 
         static void Start()
         {
@@ -71,7 +79,14 @@ namespace aTestGame
             //bulletPrefab.sprite.collision = ASCIISprite.GenerateCollision(bulletPrefab.sprite.draw);
             bulletPrefab.name = "Bullet";
 
+            wallGameObject = new GameObject();
+            wallGameObject.transform.position = new Vector2(10, 10);
+            wallGameObject.sprite.ascii = WallSprite;
+            wallGameObject.sprite.collision = ASCIISprite.GenerateCollision(WallSprite);
+            wallGameObject.events.OnCollisionStay = WallCollider;
+
             player1GameObject = GameObject.Instantiate(player1GameObject);
+            wallGameObject = GameObject.Instantiate(wallGameObject);
             //bulletobj = GameObject.Instantiate(bulletobj);
 
         }
@@ -117,9 +132,10 @@ namespace aTestGame
                 //GameObject newBullet = bulletobj.Clone();
                 GameObject newBullet = GameObject.Instantiate(bulletPrefab.Clone());
 
-                newBullet.transform.position = player1GameObject.transform.position + new Vector2(0, 1);
-                newBullet.rigidbody.velocity = new Vector2(BulletSpeed, -0.1f);
+                newBullet.transform.position = player1GameObject.transform.position + new Vector2(1, 1);
+                newBullet.rigidbody.velocity = new Vector2(BulletSpeed, 0);
                 newBullet.events.OnCollisionStay = new Action<int>(BulletOnCollisionStay);
+                newBullet.events.OnCollisionEnter = new Action<int>(BulletOnCollisionStay);
                 newBullet.Update();
 
                 GameObject.Destroy(newBullet, 2);
@@ -139,11 +155,13 @@ namespace aTestGame
             else if (Input.GetKey(ConsoleKey.D1))
             {
                 bulletPrefab.sprite.ascii = BulletSprite;
+                bulletPrefab.sprite.collision = ASCIISprite.GenerateCollision(BulletSprite);
                 Debug.LogWarning("Selected [Bullet]");
             }
             else if (Input.GetKey(ConsoleKey.D2))
             {
                 bulletPrefab.sprite.ascii = SquareSprite;
+                bulletPrefab.sprite.collision = ASCIISprite.GenerateCollision(SquareSprite);
                 Debug.LogWarning("Selected [Square]");
             }
 
@@ -156,7 +174,12 @@ namespace aTestGame
 
 		public static void BulletOnCollisionStay(int collider_identifier)
         {
+            Debug.LogWarning("COLLIDED");
+        }
 
+        public static void WallCollider(int id)
+        {
+            Debug.LogWarning("COL");
         }
     }
 }

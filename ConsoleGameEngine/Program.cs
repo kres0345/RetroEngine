@@ -12,6 +12,9 @@ namespace RetroEngine
     {
         public Vector2 velocity { get; set; }
 
+        internal Vector2 startPosition;
+        internal bool moving = false;
+
         public Rigidbody()
         {
             velocity = new Vector2(0, 0);
@@ -195,7 +198,7 @@ namespace RetroEngine
             public Action<int> OnCollisionEnter;
             public Action<int> OnCollisionStay;
             public Action<int> OnCollisionExit;
-            public List<int> LastFrameCollisions;
+            internal List<int> LastFrameCollisions;
 
             public bool TryGetOnCollisionEnter(out Action<int> OnCollisionEnter)
             {
@@ -342,6 +345,7 @@ namespace RetroEngine
         /// <returns></returns>
         public static float Lerp(float a, float b, float t)
         {
+
             return a * (1 - t) + b * t;
         }
     }
@@ -532,10 +536,6 @@ namespace RetroEngine
     public static class UI
     {
 
-        public class Image
-        {
-
-        }
     }
 
     public static class Settings
@@ -587,12 +587,23 @@ namespace RetroEngine
         public static float VerticalAxis { get; private set; }
 
         private static Dictionary<int, ConsoleKey> frameKeys = new Dictionary<int, ConsoleKey>();
+        //private static List<ConsoleKey> frameKeys = new List<ConsoleKey>();
         private static Task keyListener = null;
         //private static int lastFrame = 0;
+        private static int lastFrameKeyPressed = 0;
+
+        public static bool GetKeyDown(ConsoleKey key)
+        {
+
+            return false;
+        }
 
         public static bool GetKey(ConsoleKey key)
         {
-            if (frameKeys.TryGetValue(Game.frameCount + 1, out ConsoleKey pressedKey))
+            //return frameKeys.Contains(key);
+
+            
+            if (frameKeys.TryGetValue(Time.frameCount + 1, out ConsoleKey pressedKey))
             {
                 return pressedKey == key;
             }
@@ -615,8 +626,15 @@ namespace RetroEngine
                 while (ListenForKeys)
                 {
                     ConsoleKey key = Console.ReadKey(true).Key;
-                    frameKeys[Game.frameCount + 1] = key;
-                    //frameKeys.Add(Game.TotalFrames + 1, Console.ReadKey(true).Key);
+                    /*
+                    frameKeys.Insert(0, key);
+                    if (frameKeys.Count > 10)
+                    {
+                        frameKeys.RemoveRange(10, frameKeys.Count);
+                    }*/
+                    frameKeys[Time.frameCount + 1] = key;
+                    
+                //frameKeys.Add(Game.TotalFrames + 1, Console.ReadKey(true).Key);
                     //lastFrame = Game.TotalFrames + 1;
                 }
             });
@@ -647,22 +665,41 @@ namespace RetroEngine
         /// </summary>
         /// <remarks>Objects must NOT be removed from this list, they should be nullified.</remarks>
         public static List<GameObject> Objects { get; } = new List<GameObject>();
-        public static char[,] Background { get; set; } = new char[Settings.SizeHeight, Settings.SizeWidth];
+        public static char[,] Background { get; set; }// = new char[Settings.SizeHeight, Settings.SizeWidth];
         public static Action UpdateMethod { get; set; }
         public static Action FixedUpdateMethod { get; set; }
         public static Action StartMethod { get; set; }
-        public static int frameCount { get; private set; }
         public static long GameStartedTimestamp { get; private set; }
 
         private const int BorderIdentifier = -1;
         
         private static bool gamePlaying;
-        private static char[,] renderedGamefield { get; set; } = new char[Settings.SizeHeight, Settings.SizeWidth];
-        private static char[,] gamefield { get; set; } = new char[Settings.SizeHeight, Settings.SizeWidth];
-        private static int?[,] collisionMap { get; set; } = new int?[Settings.SizeHeight, Settings.SizeWidth];
+        private static char[,] renderedGamefield { get; set; }// = new char[Settings.SizeHeight, Settings.SizeWidth];
+        private static char[,] gamefield { get; set; }// = new char[Settings.SizeHeight, Settings.SizeWidth];
+        private static int?[,] collisionMap { get; set; }// = new int?[Settings.SizeHeight, Settings.SizeWidth];
         //private static int?[,] collisionMapRendered { get; set; } = new int?[Settings.GameSizeHeight, Settings.GameSizeWidth];
         private static List<GameObject> renderedObjects = new List<GameObject>();
         private static long lastFixedFrame;
+        private static List<int>[,] collisions { get; set; }// = new List<int>[Settings.SizeHeight, Settings.SizeWidth];
+        private static List<int>[,] handledCollisions;
+        private static char[,] gamefieldEmpty;
+
+        private static void InitializeFields()
+        {
+            Background = new char[Settings.SizeHeight, Settings.SizeWidth];
+            gamefield = new char[Settings.SizeHeight, Settings.SizeWidth];
+            collisionMap = new int?[Settings.SizeHeight, Settings.SizeWidth];
+            collisions = new List<int>[Settings.SizeHeight, Settings.SizeWidth];
+            gamefieldEmpty = new char[Settings.SizeHeight, Settings.SizeWidth];
+
+            for (int y = 0; y < gamefieldEmpty.GetLength(0); y++)
+            {
+                for (int x = 0; x < gamefieldEmpty.GetLength(1); x++)
+                {
+                    gamefieldEmpty[y, x] = ' ';
+                }
+            }
+        }
 
         /// <summary>
         /// Ends main game loop and finishes Game.Play() call.
@@ -675,6 +712,7 @@ namespace RetroEngine
         public static void Play()
         {
             // Internal start
+            InitializeFields();
             long currentTimestamp = Utility.TimeStamp();
             Console.CursorVisible = false;
             Input.ListenKeys();
@@ -754,7 +792,7 @@ namespace RetroEngine
                     try
                     {
                         timepassed = (float)(Utility.TimeStamp() - GameStartedTimestamp) / (float)1000;
-                        FPS = frameCount / timepassed;
+                        FPS = Time.frameCount / timepassed;
                     }
                     catch (DivideByZeroException) { FPS = 0; timepassed = 0; }
 
@@ -789,12 +827,17 @@ namespace RetroEngine
                         }
 
                         //if (Objects[i].rigidbody.velocity)
+                        if (Objects[i].rigidbody.velocity == Vector2.zero)
                         {
-
+                            Objects[i].rigidbody.moving = false;
+                            continue;
                         }
 
+                        Objects[i].rigidbody.startPosition = Objects[i].transform.position;
+                        Objects[i].rigidbody.moving = true;
+
                         //Todo: Fix this physics thing.
-                        Objects[i].transform.position += Objects[i].rigidbody.velocity;
+                        //Objects[i].transform.position += Objects[i].rigidbody.velocity;
 
                         //Vector2 estimatedPosition = Objects[i].transform.position + Objects[i].rigidbody.velocity;
                         /*
@@ -837,12 +880,18 @@ namespace RetroEngine
 
 
                 //UpdateWallpaper();
+
                 
+                handledCollisions = collisions;
+
                 // Draws and handles collisions of gameobjects.
                 for (int i = 0; i < Objects.Count; i++)
                 {
                     HandleGameObject(Objects[i]);
                 }
+
+                HandleCollisions();
+
 
                 UpdateBuffer();
 
@@ -852,19 +901,34 @@ namespace RetroEngine
                     UpdateMethod.Invoke();
                 }
 
-                frameCount++;
+                Time.frameCount++;
             }
         }
 
         private static void HandleGameObject(GameObject obj)
         {
-            if (obj == null || !obj.activeSelf || obj.sprite.ascii == null)
+            if (obj == null || !obj.activeSelf)
             {
                 return;
             }
 
-            //HandleCollisions(obj.sprite.collision, obj.transform.position, (int)obj.identifier);
-            PlaceCharArray(obj.sprite.ascii, (int)obj.transform.position.x, (int)obj.transform.position.y);
+
+            if (obj.rigidbody.velocity != Vector2.zero && obj.rigidbody.moving)
+            {
+                float timeLeft = (Utility.TimeStamp() - lastFixedFrame) / ((float)1000 / Time.fixedDeltaTime);
+                //Console.Title = (timeLeft * 100).ToString();
+                obj.transform.position = Vector2.Lerp(obj.rigidbody.startPosition, obj.rigidbody.startPosition + obj.rigidbody.velocity, timeLeft);
+            }
+
+            if (obj.sprite.ascii != null)
+            {
+                PlaceCharArray(obj.sprite.ascii, (int)obj.transform.position.x, (int)obj.transform.position.y);
+            }
+
+            if (obj.sprite.collision != null)
+            {
+                UpdateCollisionSingle(obj.sprite.collision, obj.transform.position, (int)obj.identifier);
+            }
         }
 
         private static void PlaceCharArray(char[,] sprite, int x, int y)
@@ -878,21 +942,46 @@ namespace RetroEngine
             int spriteWidth = sprite.GetLength(1);
             for (int loop_y = 0; loop_y < spriteHeight; loop_y++)
             {
-                for (int loop_x = 0; loop_x < spriteHeight; loop_x++)
+                for (int loop_x = 0; loop_x < spriteWidth; loop_x++)
                 {
                     SetCell(sprite[loop_y, loop_x], x + loop_x, y + loop_y);
                 }
             }
         }
 
-        private static void HandleCollisions(bool[,] collision, Vector2 position, int identifier)
+        private static void UpdateCollisionSingle(bool[,] col, Vector2 pos, int identifier)
         {
-            if (collision == null)
+            if (col == null)
             {
                 return;
             }
+            
 
-            bool collided = false;
+            for (int y = 0; y < col.GetLength(0); y++)
+            {
+                for (int x = 0; x < col.GetLength(1); x++)
+                {
+                    /*
+                    if ((int)pos.y + y < 0 || (int)pos.x + x < 0 || (int)pos.x + x > collisions.GetLength(1) || (int)pos.y + y > collisions.GetLength(0))
+                    {
+                        Debug.LogWarning(new Vector2((int)pos.x + x, (int)pos.y + y));
+                        continue;
+                    }*/
+                    if (collisions.GetLength(0) < (int)pos.y + y || collisions.GetLength(1) < (int)pos.x + x)
+                    {
+                        continue;
+                    }
+
+                    if (collisions[(int)pos.y + y, (int)pos.x + x] == null)
+                    {
+                        collisions[(int)pos.y + y, (int)pos.x + x] = new List<int> { identifier };
+                        continue;
+                    }
+
+                    collisions[(int)pos.y + y, (int)pos.x + x].Add(identifier);
+                }
+            }
+            /*
 
             for (int y = 0; y < collision.GetLength(0); y++)
             {
@@ -908,8 +997,9 @@ namespace RetroEngine
                         collided = true;
                     }
                 }
-            }
+            }*/
 
+            /*
             if (collided)
             {
                 Debug.Log("Collided");
@@ -930,8 +1020,55 @@ namespace RetroEngine
                         OnCollisionEnter(collidedIdentifier);
                     }
                 }
+            }*/
+        }
+
+        private static void HandleCollisions()
+        {
+            List<int> alreadyCalled = new List<int>();
+
+            for (int y = 0; y < collisions.GetLength(0); y++)
+            {
+                for (int x = 0; x < collisions.GetLength(1); x++)
+                {
+                    if (collisions[y, x] == null || collisions[y, x].Count <= 1)
+                    {
+                        continue;
+                    }
+
+                    List<int> collidingID = collisions[y, x];
+                    Debug.Log(collidingID[0]);
+
+                    for (int i = 0; i < collidingID.Count; i++)
+                    {
+                        if (alreadyCalled.Contains(collidingID[i]))
+                        {
+                            //Already discovered collision.
+                            continue;
+                        }
+
+                        //Did it collide previus frame?
+                        if (handledCollisions[y, x].Contains(collidingID[i]))
+                        {
+                            if(Objects[collidingID[i]].events.TryGetOnCollisionStay(out Action<int> OnCollisionStay)){
+                                //TODO: FIX THIS, I could not think of a way to give all ids in one call and make sure stuff..
+                                //Selects first in list for now.
+                                OnCollisionStay(collidingID[0]);
+                            }
+                        }
+                        else
+                        {
+                            if (Objects[collidingID[i]].events.TryGetOnCollisionEnter(out Action<int> OnCollisionEnter)){
+                                OnCollisionEnter(collidingID[0]);
+                            }
+                        }
+
+                        alreadyCalled.Add(collidingID[i]);
+                    }
+                }
             }
         }
+        
         /*
         private static void CleanBuffered()
         {
@@ -959,6 +1096,9 @@ namespace RetroEngine
 
         private static void UpdateWallpaper()
         {
+            //TODO: This currently breaks the game.
+            //Not quite sure what gives.
+            //Skipping for now...
             bool[,] updateMap = new bool[Settings.SizeHeight, Settings.SizeWidth];
 
             List<GameObject> sortedGameobjects = Objects;
@@ -995,15 +1135,17 @@ namespace RetroEngine
 
         private static void UpdateBuffer()
         {
-            for (int y = 0; y < Settings.SizeHeight; y++)
+            for (int y = 0; y < gamefield.GetLength(0); y++)
             {
-                for (int x = 0; x < Settings.SizeWidth; x++)
+                for (int x = 0; x < gamefield.GetLength(1); x++)
                 {
                     char value = gamefield[y, x];
                     if (value != '\0')
                     {
                         Utility.SetPixel(value, x, y);
                     }
+
+
                 }
             }
         }
@@ -1359,10 +1501,9 @@ namespace RetroEngine
         {
             get; internal set;
         }
-
         public static float timeScale { get; set; } = 1.0f;
-
         public static float fixedDeltaTime { get; set; } = 50;
+        public static int frameCount { get; internal set; }
 
     }
 
