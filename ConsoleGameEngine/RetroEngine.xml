@@ -1,0 +1,338 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>RetroEngine</name>
+    </assembly>
+    <members>
+        <member name="M:RetroEngine.GameObject.Get">
+            <summary>
+            Gets the instantiated GameObject.
+            </summary>
+            <returns>Already instantiated GameObject</returns>
+        </member>
+        <member name="M:RetroEngine.GameObject.Clone">
+            <summary>
+            Returns clone of current object.
+            </summary>
+            <returns>Cloned GameObject</returns>
+        </member>
+        <member name="M:RetroEngine.GameObject.Update">
+            <summary>
+            Replaces the instantiated GameObject with this.
+            </summary>
+        </member>
+        <member name="M:RetroEngine.GameObject.Destroy(System.Single)">
+            <summary>
+            Destroys GameObject, optionally after delay.
+            </summary>
+            <param name="delay">Destroys GameObject after delay</param>
+        </member>
+        <member name="M:RetroEngine.GameObject.Destroy(RetroEngine.GameObject,System.Single)">
+            <summary>
+            Destroys GameObject specified.
+            </summary>
+            <param name="obj">The GameObject to destroy</param>
+            <param name="delay">Time before GameObject is destroyed.</param>
+        </member>
+        <member name="M:RetroEngine.GameObject.Instantiate(RetroEngine.GameObject)">
+            <summary>
+            Instantiates GameObject.
+            </summary>
+            <param name="original">The GameObject to instantiate</param>
+        </member>
+        <member name="M:RetroEngine.GameObject.Find(System.String)">
+            <summary>
+            Find GameObject by name.
+            </summary>
+            <param name="name"></param>
+        </member>
+        <member name="P:RetroEngine.Transform.z_index">
+            <summary>
+            The z_index represents the order in which the gameobject is drawn.
+            And if you remove the '_', it sounds like a toothpaste brand.
+            </summary>
+        </member>
+        <member name="M:RetroEngine.Transform.Translate(RetroEngine.Vector2)">
+            <summary>
+            'Adds' vector2 to transform position.
+            </summary>
+        </member>
+        <member name="T:RetroEngine.ASCIISprite">
+            <summary>
+            Holds ascii drawing that represents a game object.
+            </summary>
+        </member>
+        <member name="M:RetroEngine.ASCIISprite.width">
+            <summary>
+            Returns width of GameObject.
+            </summary>
+        </member>
+        <member name="M:RetroEngine.ASCIISprite.height">
+            <summary>
+            Returns height of GameObject.
+            </summary>
+        </member>
+        <member name="M:RetroEngine.ASCIISprite.GenerateCollision(System.Char[0:,0:],System.Char)">
+            <summary>
+            Generates collision based on char array.
+            </summary>
+            <param name="charArray">Char array of GameObject</param>
+            <param name="excluded">Character to exclude from collision generation, defaults to {float space}(' ')</param>
+            <returns>Generated collision</returns>
+        </member>
+        <member name="M:RetroEngine.ASCIISprite.GenerateCollision(System.Char[0:,0:],System.Char[])">
+            <summary>
+            Generates collision based on char array with array of characters to exclude from generation.
+            </summary>
+            <param name="charArray">Char array of GameObject</param>
+            <param name="excluded">Multiple characters to exclude from collision generation</param>
+            <returns>Generated collision</returns>
+        </member>
+        <member name="M:RetroEngine.Mathf.Lerp(System.Single,System.Single,System.Single)">
+            <summary>
+            Interpolate liniarily between a and b by t.
+            </summary>
+            <param name="a"></param>
+            <param name="b"></param>
+            <param name="t"></param>
+            <returns></returns>
+        </member>
+        <member name="T:RetroEngine.Vector2">
+            <summary>
+            Vector2 holds 2-dimensionel coordinate set(x and y).
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Vector2.zero">
+            <summary>
+            Shorthand for writing Vector2(0, 0).
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Vector2.right">
+            <summary>
+            Shorthand for writing Vector(1, 0).
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Vector2.left">
+            <summary>
+            Shorthand for writing Vector(-1, 0).
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Vector2.up">
+            <summary>
+            Shorthand for writing Vector(0, -1).
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Vector2.down">
+            <summary>
+            Shorthand for writing Vector(0, 1).
+            </summary>
+        </member>
+        <member name="M:RetroEngine.Vector2.Lerp(RetroEngine.Vector2,RetroEngine.Vector2,System.Single)">
+            <summary>
+            
+            </summary>
+            <param name="a"></param>
+            <param name="b"></param>
+            <param name="t"></param>
+            <returns></returns>
+        </member>
+        <member name="M:RetroEngine.Vector2.Equals(RetroEngine.Vector2)">
+            <summary>
+            Compares this with another Vector2.
+            </summary>
+        </member>
+        <member name="M:RetroEngine.Vector2.EqualsRound(RetroEngine.Vector2)">
+            <summary>
+            Compare this with another Vector2, with rounded numbers.
+            </summary>
+        </member>
+        <member name="M:RetroEngine.Vector2.Rounded">
+            <summary>
+            Returns Vector2 with rounded numbers.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:RetroEngine.Vector2.Set(System.Single,System.Single)">
+            <summary>
+            Set the x and y value.
+            </summary>
+        </member>
+        <member name="M:RetroEngine.Vector2.Add(System.Single,System.Single)">
+            <summary>
+            Add to the x and y value.
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Settings.SizeWidth">
+            <summary>
+            Defines game boundaries and render size.
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Settings.SizeHeight">
+            <summary>
+            Defines game boundaries and render size.
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Settings.SquareMode">
+            <summary>
+            Makes the console grids regular quadrilateral.
+            The width - height ratio changes from 1:1 to 2:1. 
+            (A char placed in one cell is placed in 2 cells.)
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Settings.BorderCollider">
+            <summary>
+            Makes the borders a collider, preventing GameObjects from exiting the scene.
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Input.ListenForKeys">
+            <summary>
+            Checks for key presses during each frame.
+            </summary>
+        </member>
+        <member name="M:RetroEngine.Input.ListenKeys">
+            <summary>
+            Initiates key listening thread.
+            </summary>
+        </member>
+        <member name="M:RetroEngine.Input.GetAxis(RetroEngine.Input.Axis)">
+            <summary>
+            Try using <code>HorizontalAxis</code>/<code>VerticalAxis</code> instead.
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Game.Objects">
+            <summary>
+            List of all GameObjects.
+            </summary>
+            <remarks>Objects must NOT be removed from this list, they should be nullified.</remarks>
+        </member>
+        <member name="M:RetroEngine.Game.Exit">
+            <summary>
+            Ends main game loop and finishes Game.Play() call.
+            </summary>
+        </member>
+        <member name="M:RetroEngine.Game.Play">
+            <summary>
+            Starts main game loop(non-async). 
+            </summary>
+        </member>
+        <member name="M:RetroEngine.Game.SetCell(System.Char,System.Int32,System.Int32)">
+            <summary>
+            Set a specific cell's value.
+            </summary>
+        </member>
+        <member name="M:RetroEngine.Game.SetCell(System.Char[],System.Int32,System.Int32,System.Boolean)">
+            <summary>
+            Sets cell values by an character array, at a location.
+            </summary>
+            <param name="HorizontalText">Char array put horizontally or vertically.</param>
+        </member>
+        <member name="P:RetroEngine.Debug.DrawCoordinateSystemEveryFrame">
+            <summary>
+            Currently affects performance massively.  For drawing coordinate system only once refer to DrawCoordinateSystem method.
+            </summary>
+        </member>
+        <member name="F:RetroEngine.Debug.FPSCounter">
+            <summary>
+            Window title is updated to current FPS.
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Debug.CoordinateWidth">
+            <summary>
+            The maximum width of coordinate system, setting the value to null results in max width being equal to Game.GameSizeWidth.
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Debug.CoordinateHeight">
+            <summary>
+            The maximum height of coordinate system, setting the value to null results in max height being equal to Game.GameSizeHeight.
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Debug.CoordinateInterval">
+            <summary>
+            The interval of numbers displayed on each axis.
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Debug.DrawGameBorder">
+            <summary>
+            Draws border around the game area.
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Debug.LogMode">
+            <summary>
+            Log mode, <code>Spool</code> to log the output to a file, <code>DebugIDE</code> to write to special IDE debugging channel.
+            </summary>
+        </member>
+        <member name="M:RetroEngine.Debug.DrawCoordinateSystem">
+            <summary>
+            Draws coordinate system
+            </summary>
+        </member>
+        <member name="M:RetroEngine.Debug.Log(System.Object)">
+            <summary>
+            Logs a message to the current logging target defined by <code>LogMode</code>.
+            </summary>
+        </member>
+        <member name="M:RetroEngine.Debug.RefreshScreen">
+            <summary>
+            Refreshes game area.
+            </summary>
+        </member>
+        <member name="T:RetroEngine.Debug.Status">
+            <summary>
+            Class for controlling the "Status" pane.
+            </summary>
+        </member>
+        <member name="F:RetroEngine.Debug.Status.OffsetX">
+            <summary>
+            The offset of the status area on the X axis.
+            </summary>
+        </member>
+        <member name="F:RetroEngine.Debug.Status.OffsetY">
+            <summary>
+            The offset of the status area on the Y axis.
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Debug.Status.LogMaxLength">
+            <summary>
+            Defines the max length of logs, 0 is no limit.
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Debug.Status.LogIndicator">
+            <summary>
+            The line indicator of the log area.
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Debug.Status.HierarchyIndicator">
+            <summary>
+            The lien indicator of the hierarchy area.
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Debug.Status.LoggingArea">
+            <summary>
+            The area to log to.
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Debug.Status.TruncateLogs">
+            <summary>
+            Truncates logs to fit in window, prevents sudden line breaks on long log messages.
+            </summary>
+        </member>
+        <member name="P:RetroEngine.Time.deltaTime">
+            <summary>
+            Still experimenting with this...
+            </summary>
+        </member>
+        <member name="M:RetroEngine.StringExt.Truncate(System.String,System.Int32)">
+            <summary>
+            Truncates string to maxLength. Converts negative maxLength to positive.
+            </summary>
+            <param name="value"></param>
+            <param name="maxLength"></param>
+            <returns></returns>
+        </member>
+        <member name="M:RetroEngine.Utility.TimeStamp">
+            <summary>
+            Returns unix timestamp.
+            </summary>
+        </member>
+    </members>
+</doc>

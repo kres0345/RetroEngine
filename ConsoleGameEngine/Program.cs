@@ -7,11 +7,19 @@ using System.Threading.Tasks;
 namespace RetroEngine
 {
     public enum CoordinateSystemType { TopLeft, BottomLeft, Middle, TopRight, BottomRight, }
+    public enum Direction { Right, Left, Up, Down, }
 
     public class Rigidbody
     {
+        /// <summary>
+        /// The velocity of the parent GameObject.
+        /// Added every
+        /// </summary>
         public Vector2 velocity { get; set; }
+        public float mass { get; set; } = 1;
+        public bool useGravity { get; set; } = true;
 
+        internal Vector2 internalVelocity { get; set; }
         internal Vector2 startPosition;
         internal bool moving = false;
 
@@ -22,6 +30,17 @@ namespace RetroEngine
         public Rigidbody(Vector2 velocity)
         {
             this.velocity = velocity;
+        }
+
+        internal void Reset()
+        {
+            startPosition = new Vector2();
+            moving = false;
+        }
+        
+        internal Vector2 GravityForce()
+        {
+            return new Vector2(0, mass * Settings.GravityMultiplier);
         }
     }
 
@@ -69,6 +88,7 @@ namespace RetroEngine
         {
             this.sprite = gameObject.sprite;
             this.rigidbody = gameObject.rigidbody;
+            this.rigidbody.Reset();
             this.transform = gameObject.transform;
             this.events = gameObject.events;
             this.name = gameObject.name;
@@ -110,7 +130,7 @@ namespace RetroEngine
         {
             if (identifier == null)
             {
-                Debug.Log("Id is null of " + name);
+                Debug.LogError("Id is null of " + name);
                 return;
             }
 
@@ -198,7 +218,7 @@ namespace RetroEngine
             public Action<int> OnCollisionEnter;
             public Action<int> OnCollisionStay;
             public Action<int> OnCollisionExit;
-            internal List<int> LastFrameCollisions;
+            internal List<int> LastFrameCollisions = new List<int>();
 
             public bool TryGetOnCollisionEnter(out Action<int> OnCollisionEnter)
             {
@@ -386,7 +406,7 @@ namespace RetroEngine
         public static Vector2 down { get; } = new Vector2(0, 1);
 
         /// <summary>
-        /// 
+        /// Calculates the position that is a percentage(<code>t</code>) of the travel between position a and b.
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
@@ -570,10 +590,9 @@ namespace RetroEngine
         public static bool BorderCollider { get; set; } = true;
 
         /// <summary>
-        /// This does not effect general frame rate.
-        /// External and Interal fixed update are both based on this value.
+        /// The multiplier of gravity:mass force calculated.
         /// </summary>
-        //public static int TargetFramesPerSecond { get; set; } = 60;
+        public static float GravityMultiplier = 0.2f;
     }
 
     public static class Input
@@ -590,7 +609,7 @@ namespace RetroEngine
         //private static List<ConsoleKey> frameKeys = new List<ConsoleKey>();
         private static Task keyListener = null;
         //private static int lastFrame = 0;
-        private static int lastFrameKeyPressed = 0;
+        //private static int lastFrameKeyPressed = 0;
 
         public static bool GetKeyDown(ConsoleKey key)
         {
@@ -786,38 +805,28 @@ namespace RetroEngine
 
                 if (Debug.FPSCounter)
                 {
-                    //TODO: Replace try-catch with if-statement for performance.
                     float FPS;
-                    float timepassed;
-                    try
+                    float timepassed = (float)(Utility.TimeStamp() - GameStartedTimestamp);
+                    if (timepassed != 0)
                     {
-                        timepassed = (float)(Utility.TimeStamp() - GameStartedTimestamp) / (float)1000;
+                        timepassed = timepassed / (float)1000;
                         FPS = Time.frameCount / timepassed;
                     }
-                    catch (DivideByZeroException) { FPS = 0; timepassed = 0; }
-
-                    Console.Title = $"FPS: {FPS}, deltaTime: {Time.deltaTime}";
-                }
-
-                if (Debug.DrawCoordinateSystemEveryFrame)
-                {
-                    Debug.DrawCoordinateSystem();
+                    else
+                    {
+                        FPS = 0;
+                    }
+                    Console.Title = $"FPS: {FPS}";
                 }
 
                 // Updates current timestamp
-                currentTimestamp = Utility.TimeStamp();
-
+                //currentTimestamp = Utility.TimeStamp();
 
                 // Fixed framerate update
-                if (currentTimestamp - lastFixedFrame >= (float)1000 / Time.fixedDeltaTime)
+                if ((Utility.TimeStamp() - lastFixedFrame) * Time.timeScale >= (float)1000 / Time.fixedDeltaTime)
                 {
                     // Internal fixed update
-                    lastFixedFrame = currentTimestamp;
-
-                    if (Debug.Status.hierarchyFrameUpdate)
-                    {
-                        Debug.Status.UpdateHierarchy();
-                    }
+                    lastFixedFrame = Utility.TimeStamp();
 
                     for (int i = 0; i < Objects.Count; i++)
                     {
@@ -825,8 +834,7 @@ namespace RetroEngine
                         {
                             continue;
                         }
-
-                        //if (Objects[i].rigidbody.velocity)
+                        
                         if (Objects[i].rigidbody.velocity == Vector2.zero)
                         {
                             Objects[i].rigidbody.moving = false;
@@ -837,6 +845,7 @@ namespace RetroEngine
                         Objects[i].rigidbody.moving = true;
 
                         //Todo: Fix this physics thing.
+                        #region
                         //Objects[i].transform.position += Objects[i].rigidbody.velocity;
 
                         //Vector2 estimatedPosition = Objects[i].transform.position + Objects[i].rigidbody.velocity;
@@ -864,6 +873,7 @@ namespace RetroEngine
                                 }
                             }
                         }*/
+                        #endregion
                     }
 
                     // External fixed update
@@ -872,19 +882,20 @@ namespace RetroEngine
                         FixedUpdateMethod.Invoke();
                     }
 
-                    if (Debug.Status.hierarchyFrameUpdate)
+                    if (Debug.Status.HierarchyFrameUpdate)
                     {
                         Debug.Status.UpdateHierarchy();
                     }
+
+                    if (Debug.DrawCoordinateSystemEveryFrame)
+                    {
+                        Debug.DrawCoordinateSystem();
+                    }
                 }
-
-
-                //UpdateWallpaper();
-
                 
                 handledCollisions = collisions;
 
-                // Draws and handles collisions of gameobjects.
+
                 for (int i = 0; i < Objects.Count; i++)
                 {
                     HandleGameObject(Objects[i]);
@@ -912,12 +923,22 @@ namespace RetroEngine
                 return;
             }
 
-
+            //Move rigidbody by velocity.
             if (obj.rigidbody.velocity != Vector2.zero && obj.rigidbody.moving)
             {
                 float timeLeft = (Utility.TimeStamp() - lastFixedFrame) / ((float)1000 / Time.fixedDeltaTime);
-                //Console.Title = (timeLeft * 100).ToString();
-                obj.transform.position = Vector2.Lerp(obj.rigidbody.startPosition, obj.rigidbody.startPosition + obj.rigidbody.velocity, timeLeft);
+
+                Vector2 finalPosition;
+                if (obj.rigidbody.useGravity)
+                {
+                    finalPosition = obj.rigidbody.startPosition + obj.rigidbody.velocity + obj.rigidbody.GravityForce();
+                }
+                else
+                {
+                    finalPosition = obj.rigidbody.startPosition + obj.rigidbody.velocity;
+                }
+
+                obj.transform.position = Vector2.Lerp(obj.rigidbody.startPosition, finalPosition, timeLeft);
             }
 
             if (obj.sprite.ascii != null)
@@ -961,13 +982,7 @@ namespace RetroEngine
             {
                 for (int x = 0; x < col.GetLength(1); x++)
                 {
-                    /*
-                    if ((int)pos.y + y < 0 || (int)pos.x + x < 0 || (int)pos.x + x > collisions.GetLength(1) || (int)pos.y + y > collisions.GetLength(0))
-                    {
-                        Debug.LogWarning(new Vector2((int)pos.x + x, (int)pos.y + y));
-                        continue;
-                    }*/
-                    if (collisions.GetLength(0) < (int)pos.y + y || collisions.GetLength(1) < (int)pos.x + x)
+                    if ((int)pos.y + y >= collisions.GetLength(0) || (int)pos.x + x >= collisions.GetLength(1) || (int)pos.y + y < 0 || (int)pos.x + x < 0)
                     {
                         continue;
                     }
@@ -978,11 +993,16 @@ namespace RetroEngine
                         continue;
                     }
 
+                    if (collisions[(int)pos.y + y, (int)pos.x + x].Contains(identifier))
+                    {
+                        continue;
+                    }
+
                     collisions[(int)pos.y + y, (int)pos.x + x].Add(identifier);
                 }
             }
+            #region
             /*
-
             for (int y = 0; y < collision.GetLength(0); y++)
             {
                 for (int x = 0; x < collision.GetLength(1); x++)
@@ -1021,11 +1041,13 @@ namespace RetroEngine
                     }
                 }
             }*/
+            #endregion
         }
 
         private static void HandleCollisions()
         {
-            List<int> alreadyCalled = new List<int>();
+            //List<int> alreadyCalled = new List<int>();
+            Dictionary<int, List<int>> collisionHistory = new Dictionary<int, List<int>>();
 
             for (int y = 0; y < collisions.GetLength(0); y++)
             {
@@ -1036,34 +1058,55 @@ namespace RetroEngine
                         continue;
                     }
 
-                    List<int> collidingID = collisions[y, x];
-                    Debug.Log(collidingID[0]);
+                    List<int> collidingObjects = collisions[y, x];
+                    //Debug.Log(collidingID[0]);
 
-                    for (int i = 0; i < collidingID.Count; i++)
+                    for (int i = 0; i < collidingObjects.Count; i++)
                     {
-                        if (alreadyCalled.Contains(collidingID[i]))
-                        {
-                            //Already discovered collision.
-                            continue;
-                        }
+                        int identifier = collidingObjects[i];
 
-                        //Did it collide previus frame?
-                        if (handledCollisions[y, x].Contains(collidingID[i]))
+                        //foreach (int item in collidingObjects.Where((v, o) => o != i).ToList())
+                        for (int index = 0; index < collidingObjects.Count; index++)
                         {
-                            if(Objects[collidingID[i]].events.TryGetOnCollisionStay(out Action<int> OnCollisionStay)){
-                                //TODO: FIX THIS, I could not think of a way to give all ids in one call and make sure stuff..
-                                //Selects first in list for now.
-                                OnCollisionStay(collidingID[0]);
+                            if (collidingObjects[index] == identifier)
+                            {
+                                continue;
                             }
-                        }
-                        else
-                        {
-                            if (Objects[collidingID[i]].events.TryGetOnCollisionEnter(out Action<int> OnCollisionEnter)){
-                                OnCollisionEnter(collidingID[0]);
-                            }
-                        }
 
-                        alreadyCalled.Add(collidingID[i]);
+                            if (Objects[identifier] == null)
+                            {
+                                continue;
+                            }
+
+                            if (collisionHistory.TryGetValue(identifier, out List<int> value))
+                            {
+                                if (value.Contains(collidingObjects[index]))
+                                {
+                                    continue;
+                                }
+                            }
+                            else
+                            {
+                                collisionHistory[identifier] = new List<int>();
+                            }
+
+                            if (Objects[identifier].events.LastFrameCollisions.Contains(collidingObjects[index]))
+                            {
+                                if (Objects[identifier].events.TryGetOnCollisionStay(out Action<int> OnCollisionStay))
+                                {
+                                    OnCollisionStay(collidingObjects[index]);
+                                }
+                            }
+                            else if (Objects[identifier].events.TryGetOnCollisionEnter(out Action<int> OnCollisionEnter))
+                            {
+                                OnCollisionEnter(collidingObjects[index]);
+                            }
+
+                            
+                            
+                            collisionHistory[identifier].Add(collidingObjects[index]);
+                            Objects[identifier].events.LastFrameCollisions.Add(collidingObjects[index]);
+                        }
                     }
                 }
             }
@@ -1298,6 +1341,16 @@ namespace RetroEngine
             }
         }
 
+        /// <summary>
+        /// Refreshes game area.
+        /// </summary>
+        public static void RefreshScreen()
+        {
+            for (int y = 0; y < Settings.SizeHeight; y++)
+                for (int x = 0; x < Settings.SizeWidth; x++)
+                    Utility.SetPixel(' ', x, y);
+        }
+
         private static void write(object message, logType logType)
         {
             if (spoolWriter == null)
@@ -1333,23 +1386,35 @@ namespace RetroEngine
             /// <summary>
             /// The offset of the status area on the Y axis.
             /// </summary>
-            public static int OffsetY = 1;
+            public static int OffsetY = 2;
             /// <summary>
             /// Defines the max length of logs, 0 is no limit.
             /// </summary>
             public static int LogMaxLength { get; set; } = 9;
             /// <summary>
-            /// The line indicator of the status area.
+            /// The line indicator of the log area.
             /// </summary>
             public static char LogIndicator { get; set; } = '>';
+            /// <summary>
+            /// The lien indicator of the hierarchy area.
+            /// </summary>
             public static char HierarchyIndicator { get; set; } = '§';
+            /// <summary>
+            /// The area to log to.
+            /// </summary>
             public static RelativePosition LoggingArea { get; set; } = RelativePosition.None;
             public static RelativePosition HierarchyArea { get; set; } = RelativePosition.None;
-            public static bool hierarchyFrameUpdate { get; set; } = false;
+            public static bool HierarchyFrameUpdate { get; set; } = false;
+            /// <summary>
+            /// Truncates logs to fit in window, prevents sudden line breaks on long log messages.
+            /// </summary>
+            public static bool TruncateLogs { get; set; } = true;
 
             private static int hierarchyAreaLongestLine = 0;
             private static int loggingAreaLongest = 0;
             private static int logLineCount = 0;
+            private static string lastLog;
+            private static int equalLogsStreak = 0;
             //private static List<string> logText { get; } = new List<string>();
 
             public enum RelativePosition { Below, By, None }
@@ -1411,17 +1476,62 @@ namespace RetroEngine
 
             public static void Log(object message)
             {
+                if (LoggingArea == RelativePosition.None)
+                    return;
+
+                if ((string)message == lastLog)
+                {
+                    equalLogsStreak++;
+                    message = $"({equalLogsStreak}){message}";
+                }
+                else
+                {
+                    equalLogsStreak = 0;
+                    MoveLogs();
+                    lastLog = (string)message;
+                }
+
                 WriteLine(message);
                 loggingAreaLongest = Math.Max(loggingAreaLongest, message.ToString().Length);
             }
             public static void LogWarning(object message)
             {
-                WriteLine(message.ToString(), ConsoleColor.Yellow);
+                if (LoggingArea == RelativePosition.None)
+                    return;
+
+                if ((string)message == lastLog)
+                {
+                    equalLogsStreak++;
+                    message = $"({equalLogsStreak}){message}";
+                }
+                else
+                {
+                    equalLogsStreak = 0;
+                    MoveLogs();
+                    lastLog = (string)message;
+                }
+
+                WriteLine(message, ConsoleColor.Yellow);
                 loggingAreaLongest = Math.Max(loggingAreaLongest, message.ToString().Length);
             }
             public static void LogError(object message)
             {
-                WriteLine(message.ToString(), ConsoleColor.Red);
+                if (LoggingArea == RelativePosition.None)
+                    return;
+
+                if ((string)message == lastLog)
+                {
+                    equalLogsStreak++;
+                    message = $"({equalLogsStreak}){message}";
+                }
+                else
+                {
+                    equalLogsStreak = 0;
+                    MoveLogs();
+                    lastLog = (string)message;
+                }
+
+                WriteLine(message, ConsoleColor.Red);
                 loggingAreaLongest = Math.Max(loggingAreaLongest, message.ToString().Length);
             }
 
@@ -1429,18 +1539,29 @@ namespace RetroEngine
 
             private static void WriteLine(object value)
             {
+                /*
                 if (LoggingArea == RelativePosition.None)
                     return;
 
                 MoveLogs();
-
+                */
                 if (LoggingArea == RelativePosition.By)
                 {
                     Console.SetCursorPosition(Settings.SizeWidth + OffsetX, OffsetY);// + currentLogLine);
+
+                    if (TruncateLogs)
+                    {
+                        value = value.ToString().Truncate(Console.WindowWidth - Settings.SizeWidth + OffsetX - 4);
+                    }
                 }
                 else if (LoggingArea == RelativePosition.Below)
                 {
                     Console.SetCursorPosition(OffsetX, Settings.SizeHeight + OffsetY);// + currentLogLine);
+
+                    if (TruncateLogs)
+                    {
+                        value = value.ToString().Truncate(OffsetX + Console.WindowWidth - 1);
+                    }
                 }
 
                 Console.Write(LogIndicator);
@@ -1456,10 +1577,20 @@ namespace RetroEngine
                 if (area == RelativePosition.By)
                 {
                     Console.SetCursorPosition(Settings.SizeWidth + OffsetX, line + OffsetY);
+
+                    if (TruncateLogs)
+                    {
+                        value = value.ToString().Truncate(Console.WindowWidth - Settings.SizeWidth + OffsetX - 4);
+                    }
                 }
                 else if (area == RelativePosition.Below)
                 {
                     Console.SetCursorPosition(OffsetX, Settings.SizeHeight + OffsetY + line);
+
+                    if (TruncateLogs)
+                    {
+                        value = value.ToString().Truncate(OffsetX + Console.WindowWidth - 1);
+                    }
                 }
                 Console.Write(lineIndicator);
                 Console.Write(value);
@@ -1467,24 +1598,30 @@ namespace RetroEngine
 
             private static void WriteLine(object value, ConsoleColor textColor)
             {
-                if (LoggingArea == RelativePosition.None)
-                    return;
-
-                MoveLogs();
-
                 if (LoggingArea == RelativePosition.By)
                 {
                     Console.SetCursorPosition(Settings.SizeWidth + OffsetX, OffsetY);
+
+                    if (TruncateLogs)
+                    {
+                        value = value.ToString().Truncate(Console.WindowWidth - Settings.SizeWidth + OffsetX - 4);
+                    }
                 }
                 else if (LoggingArea == RelativePosition.Below)
                 {
                     Console.SetCursorPosition(OffsetX, Settings.SizeHeight + OffsetY);
+
+                    if (TruncateLogs)
+                    {
+                        value = value.ToString().Truncate(OffsetX + Console.WindowWidth - 1);
+                    }
                 }
 
-                Console.Write(LogIndicator);
+                //Console.Write(LogIndicator);
 
                 ConsoleColor defaultColor = Console.ForegroundColor;
                 Console.ForegroundColor = textColor;
+                Console.Write(LogIndicator);
                 Console.Write(value);
                 Console.ForegroundColor = defaultColor;
                 logLineCount++;
@@ -1494,16 +1631,14 @@ namespace RetroEngine
 
     public static class Time
     {
-        /// <summary>
-        /// Still experimenting with this...
-        /// </summary>
-        public static float deltaTime
-        {
-            get; internal set;
-        }
+
         public static float timeScale { get; set; } = 1.0f;
         public static float fixedDeltaTime { get; set; } = 50;
         public static int frameCount { get; internal set; }
+        /// <summary>
+        /// Still experimenting with this...
+        /// </summary>
+        public static float deltaTime { get; internal set; }
 
     }
 
@@ -1532,6 +1667,21 @@ namespace RetroEngine
         }
     }
 
+    public static class StringExt
+    {
+        /// <summary>
+        /// Truncates string to maxLength. Converts negative maxLength to positive.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="maxLength"></param>
+        /// <returns></returns>
+        public static string Truncate(this string value, int maxLength)
+        {
+            if (string.IsNullOrEmpty(value)) return value;
+
+            return value.Substring(0, Math.Min(value.Length, Math.Abs(maxLength)));
+        }
+    }
 
     internal static class Utility
     {
@@ -1577,9 +1727,10 @@ namespace RetroEngine
         /// </summary>
         public static long TimeStamp() => DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
+        /*
         public static void FillPopulatedCells(char[,] matrix, char[,] replaceMatrix, char fill = ' ')
         {
-            /*
+            
             for (int y = 0; y < matrix.GetLength(0); y++)
             {
                 for (int x = 0; x < matrix.GetLength(1); x++)
@@ -1589,8 +1740,8 @@ namespace RetroEngine
                         matrix[y, x] = replaceMatrix[y, x];
                     }
                 }
-            }*/
-        }
+            }
+        }*/
     }
 
 }
