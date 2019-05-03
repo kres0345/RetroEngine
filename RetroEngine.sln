@@ -5,9 +5,7 @@ VisualStudioVersion = 15.0.28307.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RetroEngine", "ConsoleGameEngine\RetroEngine.csproj", "{145D40C7-5F13-4C0E-B9E5-46916D73E6DB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "aTestGame", "aTestGame\aTestGame.csproj", "{596E72AC-6735-4E04-B553-08D83BE14379}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Template", "Template\Template.csproj", "{218F074F-4A71-4661-A1D9-CEC08626FA04}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "aTestGame", "aTestGame\aTestGame.csproj", "{596E72AC-6735-4E04-B553-08D83BE14379}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +21,6 @@ Global
 		{596E72AC-6735-4E04-B553-08D83BE14379}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{596E72AC-6735-4E04-B553-08D83BE14379}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{596E72AC-6735-4E04-B553-08D83BE14379}.Release|Any CPU.Build.0 = Release|Any CPU
-		{218F074F-4A71-4661-A1D9-CEC08626FA04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{218F074F-4A71-4661-A1D9-CEC08626FA04}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{218F074F-4A71-4661-A1D9-CEC08626FA04}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{218F074F-4A71-4661-A1D9-CEC08626FA04}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

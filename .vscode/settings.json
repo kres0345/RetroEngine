@@ -1,0 +1,6 @@
+{
+    "csharp.referencesCodeLens.enabled": false,
+    "vscode_custom_css.imports": [
+        "file:///C:/users/kress/VS Code Theme/synthwave84.css"
+    ]
+}
