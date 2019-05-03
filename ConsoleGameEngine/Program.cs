@@ -11,7 +11,6 @@ namespace RetroEngine
 
     public struct Mathf
     {
-
         /// <summary>
         /// Interpolate liniarily between a and b by t.
         /// </summary>
@@ -21,7 +20,6 @@ namespace RetroEngine
         /// <returns></returns>
         public static float Lerp(float a, float b, float t)
         {
-
             return a * (1 - t) + b * t;
         }
     }
@@ -227,13 +225,15 @@ namespace RetroEngine
         /// </summary>
         public static int SizeHeight { get; set; } = 10;
 
+        /*
         /// <summary>
         /// Makes the console grids regular quadrilateral.
         /// The width - height ratio changes from 1:1 to 2:1. 
         /// (A char placed in one cell is placed in 2 cells.)
         /// </summary>
-        //TODO: Implement Square Mode
         public static bool SquareMode { get; set; } = false;
+        */
+        public static bool SquareMode {get;set;} = false;
 
         /// <summary>
         /// Makes the borders a collider, preventing GameObjects from exiting the scene.
