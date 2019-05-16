@@ -137,7 +137,7 @@ namespace aTestGame
 
                 changed = true;
             }
-            else if (Input.GetKey(ConsoleKey.Spacebar))
+            else if (Input.GetKeyDown(ConsoleKey.Spacebar))
             {
 
                 //GameObject newBullet = bulletobj.Clone();
@@ -153,23 +153,23 @@ namespace aTestGame
 
                 Debug.Log("Fired weapon..");
             }
-            else if (Input.GetKey(ConsoleKey.D1))
+            else if (Input.GetKeyDown(ConsoleKey.D1))
             {
                 bulletPrefab.sprite.ascii = BulletSprite;
                 bulletPrefab.sprite.collision = ASCIISprite.GenerateCollision(BulletSprite);
                 Debug.LogWarning("Selected [Bullet]");
             }
-            else if (Input.GetKey(ConsoleKey.D2))
+            else if (Input.GetKeyDown(ConsoleKey.D2))
             {
                 bulletPrefab.sprite.ascii = SquareSprite;
                 bulletPrefab.sprite.collision = ASCIISprite.GenerateCollision(SquareSprite);
                 Debug.LogWarning("Selected [Square]");
             }
-            else if (Input.GetKey(ConsoleKey.OemPeriod))
+            else if (Input.GetKeyDown(ConsoleKey.OemPeriod))
             {
                 Debug.RefreshScreen();
             }
-            else if (Input.GetKey(ConsoleKey.Escape))
+            else if (Input.GetKeyDown(ConsoleKey.Escape))
             {
                 Game.Exit();
             }

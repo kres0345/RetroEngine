@@ -316,7 +316,9 @@ namespace RetroEngine
                 HeightOffset += 5;
             }
 
-            Console.SetWindowSize(Settings.SizeWidth + WidthOffset, Settings.SizeHeight + HeightOffset);
+            if(System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+                Console.SetWindowSize(Settings.SizeWidth + WidthOffset, Settings.SizeHeight + HeightOffset);
+
 
             if (Debug.DrawGameBorder)
             {
@@ -392,6 +394,7 @@ namespace RetroEngine
                 //currentTimestamp = Utility.TimeStamp();
 
                 // Fixed framerate update
+                #region Fixed frame update function
                 if ((Utility.TimeStamp() - lastFixedFrame) * Time.timeScale >= (float)1000 / Time.fixedDeltaTime)
                 {
                     // Internal fixed update
@@ -460,8 +463,12 @@ namespace RetroEngine
                     {
                         Debug.DrawCoordinateSystem();
                     }
+
+                    // Updates keys, every fixed frame
+                    Input.UpdateKeyFrame();
                 }
-                
+                #endregion
+
                 handledCollisions = collisions;
 
 
@@ -471,7 +478,6 @@ namespace RetroEngine
                 }
 
                 HandleCollisions();
-
 
                 UpdateBuffer();
 

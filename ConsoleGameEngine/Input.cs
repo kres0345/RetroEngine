@@ -14,7 +14,7 @@ namespace RetroEngine
         public static float HorizontalAxis { get; private set; }
         public static float VerticalAxis { get; private set; }
 
-        private static Dictionary<int, ConsoleKey> frameKeys = new Dictionary<int, ConsoleKey>();
+        //private static Dictionary<int, ConsoleKey> frameKeys = new Dictionary<int, ConsoleKey>();
         //private static List<ConsoleKey> frameKeys = new List<ConsoleKey>();
         private static Task keyListener = null;
         //private static int lastFrame = 0;
@@ -29,29 +29,30 @@ namespace RetroEngine
         public static bool GetKey(ConsoleKey key)
         {
             //return frameKeys.Contains(key);
-            
+            return currentFrameKeys.Contains(key);
+            /*
             if (frameKeys.TryGetValue(Time.frameCount + 1, out ConsoleKey pressedKey))
             {
                 return pressedKey == key;
             }
-            else { return false; }
+            else { return false; }*/
         }
 
         /// <summary>
-        /// GetKeyUp currently not supported. Use GetKey instead.
+        /// Returns true if last frame did receive key, but current frame did not.
         /// </summary>
         /// <returns></returns>
         public static bool GetKeyUp(ConsoleKey key){
-            return false;
+            return lastFrameKeys.Contains(key) && !currentFrameKeys.Contains(key);
         }
 
         /// <summary>
-        /// GetKeyDown currently not supported. Use GetKey instead.
+        /// Returns true if last frame did not receive key, but current frame did.
         /// </summary>
         /// <returns></returns>
         public static bool GetKeyDown(ConsoleKey key)
         {
-            return false;
+            return !lastFrameKeys.Contains(key) && currentFrameKeys.Contains(key);
         }
 
         /// <summary>
@@ -70,13 +71,15 @@ namespace RetroEngine
                 while (ListenForKeys)
                 {
                     ConsoleKey key = Console.ReadKey(true).Key;
+                    Debug.Status.Log("New key");
+                    currentFrameKeys.Add(key);
                     /*
                     frameKeys.Insert(0, key);
                     if (frameKeys.Count > 10)
                     {
                         frameKeys.RemoveRange(10, frameKeys.Count);
                     }*/
-                    frameKeys[Time.frameCount + 1] = key;
+                    //frameKeys[Time.frameCount + 1] = key;
                     
                 //frameKeys.Add(Game.TotalFrames + 1, Console.ReadKey(true).Key);
                     //lastFrame = Game.TotalFrames + 1;
@@ -101,8 +104,13 @@ namespace RetroEngine
             }
         }
 
-        internal static void CompareFrames(){
-            
+        /// <summary>
+        /// Called every frame to re-instantiate currentFrameKeys and update lastFrameKeys.
+        /// </summary>
+        internal static void UpdateKeyFrame(){
+            lastFrameKeys = currentFrameKeys;
+            currentFrameKeys = new List<ConsoleKey>();
+            Debug.Status.Log("New frame");
         }
     }
 
