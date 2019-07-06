@@ -1,5 +1,0 @@
-var class_retro_engine_1_1_exceptions_1_1_height_or_width_less_than_or_equal_to_zero_exception =
-[
-    [ "HeightOrWidthLessThanOrEqualToZeroException", "class_retro_engine_1_1_exceptions_1_1_height_or_width_less_than_or_equal_to_zero_exception.html#a2a9391f5cbfaf6815cb1d27eb60a423e", null ],
-    [ "HeightOrWidthLessThanOrEqualToZeroException", "class_retro_engine_1_1_exceptions_1_1_height_or_width_less_than_or_equal_to_zero_exception.html#a0dd328d283661af035a883be73fe78bc", null ]
-];
