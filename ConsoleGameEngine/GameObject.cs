@@ -1,18 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace RetroEngine
 {
-    public class GameObject
+    public class GameObject : Object
     {
         public ASCIISprite sprite { get; set; }
-        public Transform transform { get; set; }
-        public Rigidbody rigidbody { get; set; }
         public Events events { get; }
-        public string name { get; set; }
-        public int? identifier { get; private set; }
+        //public int? identifier { get; internal set; }
         public bool activeSelf { get; private set; }
 
         public GameObject()
@@ -38,22 +36,31 @@ namespace RetroEngine
         public GameObject(Transform transform)
         {
             this.transform = transform;
-            rigidbody = new Rigidbody();
             sprite = new ASCIISprite();
             events = new Events();
+            rigidbody = new Rigidbody();
             name = "default name";
             identifier = null;
             activeSelf = true;
         }
-        public GameObject(GameObject gameObject)
+        public GameObject(GameObject go)
         {
-            this.sprite = gameObject.sprite;
-            this.rigidbody = gameObject.rigidbody;
-            this.rigidbody.Reset();
-            this.transform = gameObject.transform;
-            this.events = gameObject.events;
-            this.name = gameObject.name;
-            this.activeSelf = gameObject.activeSelf;
+            this.sprite = go.sprite;
+            this.rigidbody = go.rigidbody;
+            if (go.rigidbodyEnabled)
+                this.rigidbody.Reset();
+            this.transform = go.transform;
+            this.events = go.events;
+            this.name = go.name;
+            this.activeSelf = go.activeSelf;
+        }
+
+        /// <summary>
+        /// Should only be called if you need the rigidbody.
+        /// </summary>
+        public void ActivateRigidbody()
+        {
+            rigidbodyEnabled = true;
         }
 
         /// <summary>
@@ -91,7 +98,7 @@ namespace RetroEngine
         {
             if (identifier == null)
             {
-                Debug.LogError("Id is null of " + name);
+                Debug.LogError("ID is null of " + name);
                 return;
             }
 
@@ -106,14 +113,14 @@ namespace RetroEngine
         {
             if (delay <= 0)
             {
-                Game.Objects[(int)this.identifier] = null;
+                Game.Objects[(int)identifier] = null;
             }
             else
             {
                 Task.Run(async () =>
                 {
                     await Task.Delay((int)(delay * 1000));
-                    Game.Objects[(int)this.identifier] = null;
+                    Game.Objects[(int)identifier] = null;
                 });
             }
         }
@@ -123,56 +130,13 @@ namespace RetroEngine
             activeSelf = value;
         }
 
-        /// <summary>
-        /// Destroys GameObject specified.
-        /// </summary>
-        /// <param name="obj">The GameObject to destroy</param>
-        /// <param name="delay">Time before GameObject is destroyed.</param>
-        public static void Destroy(GameObject obj, float delay = 0f)
-        {
-            if (delay <= 0)
-            {
-                Game.Objects[(int)obj.identifier] = null;
-            }
-            else
-            {
-                Task.Run(async () =>
-                {
-                    await Task.Delay((int)(delay * 1000));
-                    Game.Objects[(int)obj.identifier] = null;
-                });
-            }
-        }
-
-        /// <summary>
-        /// Instantiates GameObject.
-        /// </summary>
-        /// <param name="original">The GameObject to instantiate</param>
-        public static GameObject Instantiate(GameObject original)
-        {
-            GameObject t = new GameObject(original);
-            t.identifier = Game.Objects.Count;
-
-            Game.Objects.Add(t);
-            return t;
-        }
-        public static GameObject Instantiate(GameObject original, Vector2 position)
-        {
-            GameObject t = new GameObject(original);
-            t.identifier = Game.Objects.Count;
-            t.transform.position = position;
-
-            Game.Objects.Add(t);
-            return t;
-        }
+        
 
         /// <summary>
         /// Find GameObject by name.
         /// </summary>
         /// <param name="name"></param>
         public static GameObject Find(string name) => Game.Objects.Where(i => i.name == name).FirstOrDefault();
-
-        public override string ToString() => this.name;
 
         public class Events
         {

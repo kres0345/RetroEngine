@@ -1,23 +1,27 @@
 namespace RetroEngine
 {
-    public class Transform
+    public class Transform : Object
     {
         public Vector2 position { get; set; }
+        public Vector2 localScale { get; set; } = new Vector2(1, 1);
         /// <summary>
         /// The z_index represents the order in which the gameobject is drawn.
         /// And if you remove the '_', it sounds like a toothpaste brand.
         /// </summary>
-        public int z_index { get; set; }
+        public int z_index { get; set; } = 10;
 
         public Transform()
         {
             position = new Vector2(0, 0);
-            z_index = 10;
         }
         public Transform(Vector2 position)
         {
             this.position = position;
-            z_index = 10;
+        }
+        public Transform(Vector2 position, Vector2 scale)
+        {
+            this.position = position;
+            this.localScale = scale;
         }
 
         /// <summary>

@@ -71,7 +71,6 @@ namespace RetroEngine
                 while (ListenForKeys)
                 {
                     ConsoleKey key = Console.ReadKey(true).Key;
-                    Debug.Status.Log("New key");
                     currentFrameKeys.Add(key);
                     /*
                     frameKeys.Insert(0, key);
@@ -110,10 +109,8 @@ namespace RetroEngine
         internal static void UpdateKeyFrame(){
             lastFrameKeys = currentFrameKeys;
             currentFrameKeys = new List<ConsoleKey>();
-            Debug.Status.Log("New frame");
         }
     }
-
 }
 
 

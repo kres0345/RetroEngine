@@ -244,10 +244,16 @@ namespace RetroEngine
         /// The multiplier of gravity:mass force calculated.
         /// </summary>
         public static float GravityMultiplier = 0.2f;
+
+        /// <summary>
+        /// Not implemented.
+        /// </summary>
+        public static Vector2 gravity = new Vector2(0, 1);
     }
 
     public static class Game
     {
+
         /// <summary>
         /// List of all GameObjects.
         /// </summary>
@@ -272,6 +278,9 @@ namespace RetroEngine
         private static List<int>[,] handledCollisions;
         private static char[,] gamefieldEmpty;
 
+        private static bool[,] emptySpots;
+
+
         private static void InitializeFields()
         {
             Background = new char[Settings.SizeHeight, Settings.SizeWidth];
@@ -279,6 +288,7 @@ namespace RetroEngine
             collisionMap = new int?[Settings.SizeHeight, Settings.SizeWidth];
             collisions = new List<int>[Settings.SizeHeight, Settings.SizeWidth];
             gamefieldEmpty = new char[Settings.SizeHeight, Settings.SizeWidth];
+            emptySpots = new bool[Settings.SizeHeight, Settings.SizeWidth];
 
             for (int y = 0; y < gamefieldEmpty.GetLength(0); y++)
             {
@@ -333,7 +343,7 @@ namespace RetroEngine
                 }
             }
 
-            // TODO: Fix the wallpaper feature
+            // TODO: Fix the wallpaper feature. Or ultimately replace it. Rather the latter
             // Known bugs: Interferes with Game.Objects thereby preventing GameObjects from being instantiated.
             //UpdateWallpaper();
 
@@ -406,15 +416,18 @@ namespace RetroEngine
                         {
                             continue;
                         }
-                        
-                        if (Objects[i].rigidbody.velocity == Vector2.zero)
-                        {
-                            Objects[i].rigidbody.moving = false;
-                            continue;
-                        }
 
-                        Objects[i].rigidbody.startPosition = Objects[i].transform.position;
-                        Objects[i].rigidbody.moving = true;
+                        if (Objects[i].rigidbodyEnabled)
+                        {
+                            if (Objects[i].rigidbody.velocity == Vector2.zero)
+                            {
+                                Objects[i].rigidbody.moving = false;
+                                continue;
+                            }
+
+                            Objects[i].rigidbody.startPosition = Objects[i].transform.position;
+                            Objects[i].rigidbody.moving = true;
+                        }
 
                         //Todo: Fix this physics thing.
                         #region
@@ -479,6 +492,7 @@ namespace RetroEngine
 
                 HandleCollisions();
 
+                RefreshBuffer();
                 UpdateBuffer();
 
                 // External update loop
@@ -499,12 +513,12 @@ namespace RetroEngine
             }
 
             //Move rigidbody by velocity.
-            if (obj.rigidbody.velocity != Vector2.zero && obj.rigidbody.moving)
+            if (obj.rigidbodyEnabled && obj.rigidbody.velocity != Vector2.zero && obj.rigidbody.moving)
             {
                 float timeLeft = (Utility.TimeStamp() - lastFixedFrame) / ((float)1000 / Time.fixedDeltaTime);
 
                 Vector2 finalPosition;
-                if (obj.rigidbody.useGravity)
+                if (obj.rigidbody.gravityScale != 0)
                 {
                     finalPosition = obj.rigidbody.startPosition + obj.rigidbody.velocity + obj.rigidbody.GravityForce();
                 }
@@ -518,7 +532,9 @@ namespace RetroEngine
 
             if (obj.sprite.ascii != null)
             {
-                PlaceCharArray(obj.sprite.ascii, (int)obj.transform.position.x, (int)obj.transform.position.y);
+                // TODO: Don't.. and I mean DONT. do dis every frame. Maybe do some pre-calculated arrays instead, and then update those as the scale changes.
+                PlaceCharArray(Utility.Multiply2DArray(obj.sprite.ascii, (int)obj.transform.localScale.x, (int)obj.transform.localScale.y), (int)obj.transform.position.x, (int)obj.transform.position.y);
+                //PlaceCharArray(obj.sprite.ascii, (int)obj.transform.position.x, (int)obj.transform.position.y);
             }
 
             if (obj.sprite.collision != null)
@@ -676,8 +692,6 @@ namespace RetroEngine
                             {
                                 OnCollisionEnter(collidingObjects[index]);
                             }
-
-                            
                             
                             collisionHistory[identifier].Add(collidingObjects[index]);
                             Objects[identifier].events.LastFrameCollisions.Add(collidingObjects[index]);
@@ -750,9 +764,39 @@ namespace RetroEngine
                 }
             }
         }
+        
+        /// <summary>
+        /// Removes left over pixels
+        /// </summary>
+        private static void RefreshBuffer()
+        {
+            emptySpots = new bool[renderedGamefield.GetLength(0), renderedGamefield.GetLength(1)];
+
+            for (int y = 0; y < renderedGamefield.GetLength(0); y++)
+            {
+                for (int x = 0; x < renderedGamefield.GetLength(1); x++)
+                {
+                    if (gamefield[y, x] == '\0' && renderedGamefield[y, x] != '\0')
+                    {
+                        emptySpots[y, x] = true;
+                    }
+                }
+            }
+        }
 
         private static void UpdateBuffer()
         {
+            for (int y = 0; y < emptySpots.GetLength(0); y++)
+            {
+                for (int x = 0; x < emptySpots.GetLength(1); x++)
+                {
+                    if (emptySpots[y, x])
+                    {
+                        Utility.SetPixel('\0', x, y);
+                    }
+                }
+            }
+
             for (int y = 0; y < gamefield.GetLength(0); y++)
             {
                 for (int x = 0; x < gamefield.GetLength(1); x++)
@@ -762,8 +806,6 @@ namespace RetroEngine
                     {
                         Utility.SetPixel(value, x, y);
                     }
-
-
                 }
             }
         }
@@ -1219,9 +1261,18 @@ namespace RetroEngine
             return value.Substring(0, Math.Min(value.Length, Math.Abs(maxLength)));
         }
     }
+    public static class ArrayExtensions
+    {
+        public static IEnumerable<T> ToEnumerable<T>(this Array target)
+        {
+            foreach (var item in target)
+                yield return (T)item;
+        }
+    }
 
     internal static class Utility
     {
+        // A pixel is considered a single cell in the command prompt.
         public static void SetPixel(string value, int x, int y)
         {
             if (0 < x && x < Console.BufferWidth &&
@@ -1263,6 +1314,28 @@ namespace RetroEngine
         /// Returns unix timestamp.
         /// </summary>
         public static long TimeStamp() => DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+        public static char[,] Multiply2DArray(char[,] array, int scaleX, int scaleY)
+        {
+            char[,] newArray = new char[array.GetLength(0) * scaleY, array.GetLength(1) * scaleX];
+
+            for (int y = 0; y < array.GetLength(0); y++)
+            {
+                for (int x = 0; x < array.GetLength(1); x++)
+                {
+                    char value = array[y, x];
+                    for (int y_1 = 0; y_1 < scaleY; y_1++)
+                    {
+                        for (int x_1 = 0; x_1 < scaleX; x_1++)
+                        {
+                            newArray[y + y_1, x + x_1] = value;
+                        }
+                    }
+                }
+            }
+
+            return newArray;
+        }
 
         /*
         public static void FillPopulatedCells(char[,] matrix, char[,] replaceMatrix, char fill = ' ')

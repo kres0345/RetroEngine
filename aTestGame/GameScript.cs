@@ -56,12 +56,12 @@ namespace aTestGame
             Game.UpdateMethod = Update;
 
             Debug.DrawGameBorder = true;
-            Debug.Status.HierarchyArea = Debug.Status.RelativePosition.By;
-            Debug.Status.LoggingArea = Debug.Status.RelativePosition.Below;
+            Debug.Status.HierarchyArea = Debug.Status.RelativePosition.None;
+            Debug.Status.LoggingArea = Debug.Status.RelativePosition.By;
             Debug.Status.LogMaxLength = 8;
 
-            Settings.SizeHeight = 30;
-            Settings.SizeWidth = 120;
+            Settings.SizeHeight = 30; //30
+            Settings.SizeWidth = 120; //120
 
             Debug.Status.HierarchyFrameUpdate = true;
 
@@ -74,10 +74,9 @@ namespace aTestGame
         public static GameObject wallGameObject;
 
         static float PlayerSpeed = 1;
-        static float BulletSpeed = 0.9f;
+        static float BulletSpeed = 1;
 
-        static float HorizontalSpeedMultiplier = 2;
-
+        static float HorizontalSpeedMultiplier = 1;
 
 
         static void Start()
@@ -85,7 +84,7 @@ namespace aTestGame
             //GameObject obj = new GameObject();
             player1GameObject = new GameObject();
             player1GameObject.transform.position = new Vector2(3, 3);
-            player1GameObject.sprite.ascii = LargeFaceSprite;
+            player1GameObject.sprite.ascii = PlayerSprite;
             player1GameObject.sprite.collision = ASCIISprite.GenerateCollision(player1GameObject.sprite.ascii);
 
             //Game.Objects.Add("Player1", player1obj);
@@ -116,28 +115,28 @@ namespace aTestGame
 
                 changed = true;
             }
-            else if (Input.GetKey(ConsoleKey.W))
+            if (Input.GetKey(ConsoleKey.W))
             {
                 //player1GameObject.transform.position = new Vector2(player1GameObject.transform.position.x, player1GameObject.transform.position.y - (1 * PlayerSpeed));
                 player1GameObject.transform.Translate(new Vector2(0, -PlayerSpeed));
 
                 changed = true;
             }
-            else if (Input.GetKey(ConsoleKey.S))
+            if (Input.GetKey(ConsoleKey.S))
             {
                 //player1GameObject.transform.position = new Vector2(player1GameObject.transform.position.x, player1GameObject.transform.position.y + (1 * PlayerSpeed));
                 player1GameObject.transform.Translate(new Vector2(0, PlayerSpeed));
 
                 changed = true;
             }
-            else if (Input.GetKey(ConsoleKey.A))
+            if (Input.GetKey(ConsoleKey.A))
             {
                 //player1GameObject.transform.position = new Vector2(player1GameObject.transform.position.x - (1 * PlayerSpeed), player1GameObject.transform.position.y);
                 player1GameObject.transform.Translate(new Vector2(-PlayerSpeed * HorizontalSpeedMultiplier, 0));
 
                 changed = true;
             }
-            else if (Input.GetKeyDown(ConsoleKey.Spacebar))
+            if (Input.GetKeyDown(ConsoleKey.Spacebar))
             {
 
                 //GameObject newBullet = bulletobj.Clone();
@@ -153,23 +152,23 @@ namespace aTestGame
 
                 Debug.Log("Fired weapon..");
             }
-            else if (Input.GetKeyDown(ConsoleKey.D1))
+            if (Input.GetKeyDown(ConsoleKey.D1))
             {
                 bulletPrefab.sprite.ascii = BulletSprite;
                 bulletPrefab.sprite.collision = ASCIISprite.GenerateCollision(BulletSprite);
                 Debug.LogWarning("Selected [Bullet]");
             }
-            else if (Input.GetKeyDown(ConsoleKey.D2))
+            if (Input.GetKeyDown(ConsoleKey.D2))
             {
                 bulletPrefab.sprite.ascii = SquareSprite;
                 bulletPrefab.sprite.collision = ASCIISprite.GenerateCollision(SquareSprite);
                 Debug.LogWarning("Selected [Square]");
             }
-            else if (Input.GetKeyDown(ConsoleKey.OemPeriod))
+            if (Input.GetKeyDown(ConsoleKey.OemPeriod))
             {
                 Debug.RefreshScreen();
             }
-            else if (Input.GetKeyDown(ConsoleKey.Escape))
+            if (Input.GetKeyDown(ConsoleKey.Escape))
             {
                 Game.Exit();
             }

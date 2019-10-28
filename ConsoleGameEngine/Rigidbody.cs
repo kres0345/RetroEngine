@@ -1,14 +1,16 @@
 namespace RetroEngine
 {
-    public class Rigidbody
+    public class Rigidbody : Object
     {
         /// <summary>
         /// The velocity of the parent GameObject.
         /// Added every
         /// </summary>
         public Vector2 velocity { get; set; }
-        public float mass { get; set; } = 1;
-        public bool useGravity { get; set; } = true;
+        public float mass { get; set; }
+        public float density { get; set; } = 1;
+        public Vector2 centerOfMass { get; set; }
+        public float gravityScale { get; set; } = 1;
 
         internal Vector2 internalVelocity { get; set; }
         internal Vector2 startPosition;
@@ -31,7 +33,53 @@ namespace RetroEngine
         
         internal Vector2 GravityForce()
         {
-            return new Vector2(0, mass * Settings.GravityMultiplier);
+            return new Vector2(0, mass * density * gravityScale * Settings.GravityMultiplier);
+        }
+
+        internal Vector2 CalculateCenterOfMass(ASCIISprite sprite)
+        {
+            int totalX = 0, totalY = 0;
+            int points = 0;
+
+            for (int y = 0; y < sprite.collision.GetLength(0); y++)
+            {
+                for (int x = 0; x < sprite.collision.GetLength(1); x++)
+                {
+                    if (sprite.collision[y, x])
+                    {
+                        totalX += x;
+                        totalY += y;
+                        points++;
+                    }
+                }
+            }
+
+            return new Vector2(points != 0 ? totalX / points : 0, points != 0 ? totalY / points : 0);
+        }
+
+        public void UpdateCenterOfMass(ASCIISprite sprite)
+        {
+            centerOfMass = CalculateCenterOfMass(sprite);
+        }
+
+        public static float CalculateMass(bool[,] collision)
+        {
+            return CalculateMass(collision, new Vector2(1, 1));
+        }
+        public static float CalculateMass(bool[,] collision, Vector2 scale)
+        {
+            float mass = 0;
+            for (int y = 0; y < collision.GetLength(0); y++)
+            {
+                for (int x = 0; x < collision.GetLength(1); x++)
+                {
+                    if (collision[y, x])
+                    {
+                        mass++;
+                    }
+                }
+            }
+            return mass * scale.x * scale.y;
         }
     }
 
