@@ -267,7 +267,7 @@ namespace RetroEngine
 
         private const int BorderIdentifier = -1;
         
-        private static bool gamePlaying;
+        private static bool gameRunning;
         private static char[,] renderedGamefield { get; set; }// = new char[Settings.SizeHeight, Settings.SizeWidth];
         private static char[,] gamefield { get; set; }// = new char[Settings.SizeHeight, Settings.SizeWidth];
         private static int?[,] collisionMap { get; set; }// = new int?[Settings.SizeHeight, Settings.SizeWidth];
@@ -302,7 +302,7 @@ namespace RetroEngine
         /// <summary>
         /// Ends main game loop and finishes Game.Play() call.
         /// </summary>
-        public static void Exit() => gamePlaying = false;
+        public static void Exit() => gameRunning = false;
 
         /// <summary>
         /// Starts main game loop(non-async). 
@@ -311,7 +311,7 @@ namespace RetroEngine
         {
             // Internal start
             InitializeFields();
-            long currentTimestamp = Utility.TimeStamp();
+            long time2 = Utility.TimeStamp();
             Console.CursorVisible = false;
             Input.ListenKeys();
 
@@ -359,36 +359,43 @@ namespace RetroEngine
                 HandleGameObject(Objects[i]);
             }
 
+
             //previousFrameObjects = Objects;
             GameStartedTimestamp = Utility.TimeStamp();
             lastFixedFrame = Utility.TimeStamp();
 
-            long previousTimestamp = currentTimestamp;
-            currentTimestamp = Utility.TimeStamp();
+            long time1 = time2;
+            time2 = Utility.TimeStamp();
 
-            gamePlaying = true;
-
-
+            gameRunning = true;
 
             // Main game loop.
-            while (gamePlaying)
+            while (gameRunning)
             {
-                // Internal Update loop
-                renderedObjects = Objects;
-                renderedGamefield = gamefield;
-                previousTimestamp = currentTimestamp;
-                currentTimestamp = Utility.TimeStamp();
-                gamefield = new char[Settings.SizeHeight, Settings.SizeWidth];
+                // Clock updates
+                time2 = Utility.TimeStamp();
+                Time.deltaTime = time2 - time1;
+                time1 = time2;
+                //float delta = currentTimestamp - previousTimestamp;
+                //Time.deltaTime = delta != 0 ? delta / (float)1000 : 0;
                 
 
-                float delta = currentTimestamp - previousTimestamp;
-                Time.deltaTime = delta != 0 ? delta / (float)1000 : 0;
+                /*
+                previousTimestamp = currentTimestamp;
+                currentTimestamp = Utility.TimeStamp();
+                */
+
+                // Internal update loop
+                renderedObjects = Objects;
+                renderedGamefield = gamefield;
+                gamefield = new char[Settings.SizeHeight, Settings.SizeWidth];
 
                 if (Debug.FPSCounter)
                 {
-                    float FPS;
+
+                    //float FPS;
                     float timepassed = (float)(Utility.TimeStamp() - GameStartedTimestamp);
-                    if (timepassed != 0)
+                    /*if (timepassed != 0)
                     {
                         timepassed = timepassed / (float)1000;
                         FPS = Time.frameCount / timepassed;
@@ -396,8 +403,8 @@ namespace RetroEngine
                     else
                     {
                         FPS = 0;
-                    }
-                    Console.Title = $"FPS: {FPS}";
+                    }*/
+                    Console.Title = $"FPS: {1 / Time.deltaTime}";
                 }
 
                 // Updates current timestamp
