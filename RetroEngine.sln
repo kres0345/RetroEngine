@@ -1,15 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30011.22
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RetroEngine", "ConsoleGameEngine\RetroEngine.csproj", "{145D40C7-5F13-4C0E-B9E5-46916D73E6DB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "aTestGame", "aTestGame\aTestGame.csproj", "{596E72AC-6735-4E04-B553-08D83BE14379}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SecondGame", "SecondGame\SecondGame.csproj", "{A5201FFD-4745-4807-A1A6-268A4FFAD6BC}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PatrickRPG", "PatrickRPG\PatrickRPG.csproj", "{F60662FE-1267-4624-AB65-B84FD8FB2150}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecondGame", "SecondGame\SecondGame.csproj", "{A5201FFD-4745-4807-A1A6-268A4FFAD6BC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,10 +27,6 @@ Global
 		{A5201FFD-4745-4807-A1A6-268A4FFAD6BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A5201FFD-4745-4807-A1A6-268A4FFAD6BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A5201FFD-4745-4807-A1A6-268A4FFAD6BC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F60662FE-1267-4624-AB65-B84FD8FB2150}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F60662FE-1267-4624-AB65-B84FD8FB2150}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F60662FE-1267-4624-AB65-B84FD8FB2150}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F60662FE-1267-4624-AB65-B84FD8FB2150}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

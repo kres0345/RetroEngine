@@ -13,7 +13,7 @@ namespace RetroEngine
         /// <summary>
         /// When disabled, no calculations including properties of the rigidbody will be done.
         /// </summary>
-        public bool rigidbodyEnabled = false;
+        public bool rigidbodyEnabled { get; set; } = false;
         public string name;
         public string tag;
         internal int? identifier;

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace RetroEngine
 {
@@ -138,7 +137,7 @@ namespace RetroEngine
         }
         public static bool operator !=(Vector2 a, Vector2 b)
         {
-            return a.x != b.x || a.y != b.y;
+            return (int)a.x == (int)b.x && (int)a.y == (int)b.y;
         }
         public static Vector2 operator +(Vector2 a, Vector2 b)
         {
@@ -306,7 +305,7 @@ namespace RetroEngine
         public static void Exit() => gameRunning = false;
 
         /// <summary>
-        /// Starts main game loop (blocking). 
+        /// Starts main game loop(non-async). 
         /// </summary>
         public static void Play()
         {
@@ -375,7 +374,7 @@ namespace RetroEngine
             {
                 // Clock updates
                 time2 = Utility.TimeStamp();
-                Time.deltaTime = (time2 - time1) / 1000f;
+                Time.deltaTime = time2 - time1;
                 time1 = time2;
                 //float delta = currentTimestamp - previousTimestamp;
                 //Time.deltaTime = delta != 0 ? delta / (float)1000 : 0;
@@ -395,12 +394,17 @@ namespace RetroEngine
                 {
 
                     //float FPS;
-                    //float timepassed = (float)(Utility.TimeStamp() - GameStartedTimestamp);
-
-                    if (Time.deltaTime != 0)
+                    float timepassed = (float)(Utility.TimeStamp() - GameStartedTimestamp);
+                    /*if (timepassed != 0)
                     {
-                        Console.Title = $"FPS: {(int)Math.Floor(1f / Time.deltaTime)}";
+                        timepassed = timepassed / (float)1000;
+                        FPS = Time.frameCount / timepassed;
                     }
+                    else
+                    {
+                        FPS = 0;
+                    }*/
+                    Console.Title = $"FPS: {1 / Time.deltaTime}";
                 }
 
                 // Updates current timestamp
@@ -408,10 +412,9 @@ namespace RetroEngine
 
                 // Fixed framerate update
                 #region Fixed frame update function
-                if ((Utility.TimeStamp() - lastFixedFrame) >= (float)1000 / Time.fixedFramesPerSecond) // * Time.timeScale
+                if ((Utility.TimeStamp() - lastFixedFrame) * Time.timeScale >= (float)1000 / Time.fixedDeltaTime)
                 {
                     // Internal fixed update
-                    Time.fixedDeltaTime = (Utility.TimeStamp() - lastFixedFrame) / 1000f;
                     lastFixedFrame = Utility.TimeStamp();
 
                     for (int i = 0; i < Objects.Count; i++)
@@ -471,16 +474,6 @@ namespace RetroEngine
                         FixedUpdateMethod.Invoke();
                     }
 
-                    for (int i = 0; i < Objects.Count; i++)
-                    {
-                        if (Objects[i] == null || !Objects[i].rigidbodyEnabled || !Objects[i].activeSelf)
-                        {
-                            continue;
-                        }
-                        HandlePhysics(Objects[i]);
-                        Objects[i].Update();
-                    }
-
                     if (Debug.Status.HierarchyFrameUpdate)
                     {
                         Debug.Status.UpdateHierarchy();
@@ -502,10 +495,6 @@ namespace RetroEngine
                 for (int i = 0; i < Objects.Count; i++)
                 {
                     HandleGameObject(Objects[i]);
-                    if (Objects[i] != null)
-                    {
-                        Objects[i].Update();
-                    }
                 }
 
                 HandleCollisions();
@@ -523,26 +512,30 @@ namespace RetroEngine
             }
         }
 
-        private static void HandlePhysics(GameObject obj)
-        {
-            Vector2 finalPosition = obj.rigidbody.startPosition;
-
-            //float timeLeft = (Utility.TimeStamp() - lastFixedFrame) / ((float)1000 / Time.fixedFramesPerSecond);
-            
-            finalPosition += (obj.rigidbody.velocity + obj.rigidbody.GravityForce()) * Time.fixedDeltaTime * Time.timeScale;
-
-            obj.transform.position = finalPosition;
-            //obj.transform.position = Vector2.Lerp(obj.rigidbody.startPosition, finalPosition, timeLeft); // ny: fjernet linje
-            
-        }
-
         private static void HandleGameObject(GameObject obj)
         {
             if (obj == null || !obj.activeSelf)
             {
                 return;
             }
-            
+
+            //Move rigidbody by velocity.
+            if (obj.rigidbodyEnabled && obj.rigidbody.velocity != Vector2.zero && obj.rigidbody.moving)
+            {
+                float timeLeft = (Utility.TimeStamp() - lastFixedFrame) / ((float)1000 / Time.fixedDeltaTime);
+
+                Vector2 finalPosition;
+                if (obj.rigidbody.gravityScale != 0)
+                {
+                    finalPosition = obj.rigidbody.startPosition + obj.rigidbody.velocity + obj.rigidbody.GravityForce();
+                }
+                else
+                {
+                    finalPosition = obj.rigidbody.startPosition + obj.rigidbody.velocity;
+                }
+
+                obj.transform.position = Vector2.Lerp(obj.rigidbody.startPosition, finalPosition, timeLeft);
+            }
 
             if (obj.sprite.ascii != null)
             {
@@ -1110,7 +1103,7 @@ namespace RetroEngine
                 if (LoggingArea == RelativePosition.None)
                     return;
 
-                if (message.ToString() == lastLog)
+                if ((string)message == lastLog)
                 {
                     equalLogsStreak++;
                     message = $"({equalLogsStreak}){message}";
@@ -1119,7 +1112,7 @@ namespace RetroEngine
                 {
                     equalLogsStreak = 0;
                     MoveLogs();
-                    lastLog = message.ToString();
+                    lastLog = (string)message;
                 }
 
                 WriteLine(message);
