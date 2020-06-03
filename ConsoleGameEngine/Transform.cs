@@ -29,7 +29,7 @@ namespace RetroEngine
         /// </summary>
         public void Translate(Vector2 translation)
         {
-            position = position + translation;
+            position += translation;
         }
     }
 

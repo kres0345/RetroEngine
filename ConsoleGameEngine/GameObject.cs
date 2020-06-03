@@ -47,8 +47,7 @@ namespace RetroEngine
         {
             this.sprite = go.sprite;
             this.rigidbody = go.rigidbody;
-            if (go.rigidbodyEnabled)
-                this.rigidbody.Reset();
+            this.rigidbodyEnabled = go.rigidbodyEnabled;
             this.transform = go.transform;
             this.events = go.events;
             this.name = go.name;
@@ -117,6 +116,7 @@ namespace RetroEngine
             }
             else
             {
+                //TODO: fix det her
                 Task.Run(async () =>
                 {
                     await Task.Delay((int)(delay * 1000));
