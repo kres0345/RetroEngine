@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RetroEngine
 {
-    public class GameObject : Object
+    public class GameObject : Object, ICloneable
     {
         public ASCIISprite sprite { get; set; }
         public Events events { get; }
@@ -84,12 +84,7 @@ namespace RetroEngine
 
             return Game.Objects[(int)identifier];
         }
-        
-        /// <summary>
-        /// Returns clone of current object.
-        /// </summary>
-        /// <returns>Cloned GameObject</returns>
-        public GameObject Clone() => new GameObject(this);
+       
 
         /// <summary>
         /// Replaces the instantiated GameObject with this.
@@ -137,6 +132,15 @@ namespace RetroEngine
         /// </summary>
         /// <param name="name"></param>
         public static GameObject Find(string name) => Game.Objects.Where(i => i.name == name).FirstOrDefault();
+
+        /// <summary>
+        /// Returns clone of current object.
+        /// </summary>
+        /// <returns>Cloned GameObject</returns>
+        public object Clone()
+        {
+            return new GameObject(this);
+        }
 
         public class Events
         {

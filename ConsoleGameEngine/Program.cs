@@ -29,8 +29,8 @@ namespace RetroEngine
     /// </summary>
     public struct Vector2 : IEquatable<Vector2>
     {
-        public float x { get; set; }
-        public float y { get; set; }
+        public float x { get; private set; }
+        public float y { get; private set; }
 
         public Vector2(float x, float y)
         {
@@ -110,20 +110,11 @@ namespace RetroEngine
         }
 
         /// <summary>
-        /// Set the x and y value.
-        /// </summary>
-        public void Set(float x, float y)
-        {
-            this.x = x;
-            this.y = y;
-        }
-        /// <summary>
         /// Add to the x and y value.
         /// </summary>
         public void Add(float x, float y)
         {
-            this.x += x;
-            this.y += y;
+            this = new Vector2(this.x + x, this.y + y);
         }
 
 
@@ -141,69 +132,43 @@ namespace RetroEngine
         }
         public static Vector2 operator +(Vector2 a, Vector2 b)
         {
-            a.x += b.x;
-            a.y += b.y;
-            return a;
-            //return new Vector2(a.x + b.x, a.y + b.y);
+            return new Vector2(a.x + b.x, a.y + b.y);
         }
         public static Vector2 operator +(Vector2 a, float b)
         {
-            a.x += b;
-            a.y += b;
-            return a;
+            return new Vector2(a.x + b, a.y + b);
         }
         public static Vector2 operator -(Vector2 a, Vector2 b)
         {
-            a.x -= b.x;
-            a.y -= b.y;
-            return a;
-            //return new Vector2(a.x - b.x, a.y - b.y);
+            return new Vector2(a.x - b.x, a.y - b.y);
         }
         public static Vector2 operator *(float d, Vector2 a)
         {
-            a.x *= d;
-            a.y *= d;
-            return a;
-            //return new Vector2(a.x * d, a.y * d);
+            return new Vector2(a.x * d, a.y * d);
         }
         public static Vector2 operator *(Vector2 a, float d)
         {
-            a.x *= d;
-            a.y *= d;
-            return a;
-            //return new Vector2(a.x * d, a.y * d);
-        }
-        public static Vector2 operator *(decimal d, Vector2 a)
-        {
-            a.x *= (float)d;
-            a.y *= (float)d;
-            return a;
-            //return new Vector2(a.x * (float)d, a.y * (float)d);
-        }
-        public static Vector2 operator *(Vector2 a, decimal d)
-        {
-            a.x *= (float)d;
-            a.y *= (float)d;
-            return a;
-            //return new Vector2(a.x * (float)d, a.y * (float)d);
+            return new Vector2(a.x * d, a.y * d);
         }
         public static Vector2 operator *(Vector2 a, Vector2 b)
         {
-            a.x *= b.x;
-            a.y *= b.y;
-            return a;
+            return new Vector2(a.x * b.x, a.y * b.y);
+        }
+        public static Vector2 operator *(decimal d, Vector2 a)
+        {
+            return new Vector2(a.x * (float)d, a.y * (float)d);
+        }
+        public static Vector2 operator *(Vector2 a, decimal d)
+        {
+            return new Vector2(a.x * (float)d, a.y * (float)d);
         }
         public static Vector2 operator /(Vector2 a, float b)
         {
-            a.x /= b;
-            a.y /= b;
-            return a;
+            return new Vector2(a.x / b, a.y / b);
         }
         public static Vector2 operator /(Vector2 a, Vector2 b)
         {
-            a.x /= b.x;
-            a.y /= b.y;
-            return a;
+            return new Vector2(a.x / b.x, a.y / b.y);
         }
     }
 
